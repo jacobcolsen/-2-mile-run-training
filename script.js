@@ -644,22 +644,56 @@ function renderLogList() {
 // AUDIO / VOICE CUES
 // ============================================================
 
-// Load available voices — iOS populates these asynchronously
+// iOS Safari quirk: getVoices() returns [] on first call and
+// onvoiceschanged fires inconsistently. We poll until voices appear.
+let voicePollTimer = null;
+
 function loadVoices() {
   if (!window.speechSynthesis) return;
-  availableVoices = window.speechSynthesis.getVoices()
-    .filter(v => v.lang.startsWith('en'));
-  populateVoiceSelect();
+
+  const raw = window.speechSynthesis.getVoices();
+  if (raw.length > 0) {
+    availableVoices = raw.filter(v => v.lang.startsWith('en'));
+    clearInterval(voicePollTimer);
+    populateVoiceSelect();
+    return;
+  }
+
+  // Not ready yet — start polling if not already
+  if (!voicePollTimer) {
+    let attempts = 0;
+    voicePollTimer = setInterval(() => {
+      const v = window.speechSynthesis.getVoices();
+      if (v.length > 0 || ++attempts > 40) {  // give up after ~8 seconds
+        clearInterval(voicePollTimer);
+        voicePollTimer = null;
+        availableVoices = v.filter(v => v.lang.startsWith('en'));
+        populateVoiceSelect();
+      }
+    }, 200);
+  }
 }
 
 if (window.speechSynthesis) {
+  // onvoiceschanged works on Chrome/desktop; polling covers iOS Safari
   window.speechSynthesis.onvoiceschanged = loadVoices;
-  loadVoices(); // also try immediately (works on some browsers)
+  loadVoices();
 }
 
 function populateVoiceSelect() {
   const sel = document.getElementById('voice-select');
-  if (!sel || availableVoices.length === 0) return;
+  if (!sel) return;
+
+  if (availableVoices.length === 0) {
+    // Still no voices (iOS may never expose them in Safari without interaction)
+    sel.innerHTML = '<option value="">System default</option>';
+    sel.disabled = true;
+    const hint = document.getElementById('voice-picker-hint');
+    if (hint) hint.textContent = 'Voice selection unavailable in Safari — iOS will use its default voice.';
+    return;
+  }
+
+  sel.disabled = false;
   sel.innerHTML = '';
   availableVoices.forEach(v => {
     const opt = document.createElement('option');
@@ -668,19 +702,26 @@ function populateVoiceSelect() {
     if (v.name === selectedVoiceName) opt.selected = true;
     sel.appendChild(opt);
   });
-  // If nothing is selected yet, prefer Samantha or first available
-  if (!selectedVoiceName) {
-    const samantha = availableVoices.find(v => v.name === 'Samantha');
-    const preferred = samantha || availableVoices[0];
+
+  // Auto-select: prefer previously saved, then Samantha, then first
+  if (!selectedVoiceName || !availableVoices.find(v => v.name === selectedVoiceName)) {
+    const preferred = availableVoices.find(v => v.name === 'Samantha') || availableVoices[0];
     if (preferred) {
       selectedVoiceName = preferred.name;
       sel.value = preferred.name;
     }
+  } else {
+    sel.value = selectedVoiceName;
   }
+
+  const hint = document.getElementById('voice-picker-hint');
+  if (hint) hint.textContent = '';
 }
 
 function getVoice() {
-  return availableVoices.find(v => v.name === selectedVoiceName) || availableVoices[0] || null;
+  // If no voices loaded, return null — iOS will use its system default
+  if (availableVoices.length === 0) return null;
+  return availableVoices.find(v => v.name === selectedVoiceName) || availableVoices[0];
 }
 
 // Unlock iOS speech synthesis — must be called from a user gesture
@@ -699,6 +740,9 @@ function speak(text) {
   utt.rate = 0.95;   // Slightly slower = more natural
   utt.pitch = 1.0;
   utt.volume = 1.0;
+  // onend fires when iOS finishes speaking — iOS audio session then
+  // automatically resumes any interrupted app (Audible, Spotify, etc.)
+  utt.onend = () => {};
   window.speechSynthesis.speak(utt);
 }
 
@@ -905,7 +949,7 @@ function initPhase(index) {
 // Advance to the next phase (called when current phase completes)
 function advancePhase() {
   vibrate([200, 100, 200]);
-  playBeep();
+  playBeep('end');
 
   if (timerState.phaseIndex < timerState.phases.length - 1) {
     const nextIndex = timerState.phaseIndex + 1;
@@ -959,7 +1003,7 @@ function timerTick() {
       // All reps done — go to next workout phase
       if (phase.voiceComplete) setTimeout(() => speak(phase.voiceComplete), 100);
       vibrate([200, 100, 200, 100, 200]);
-      playBeep();
+      playBeep('end');   // Distinct "done" tone
       advancePhase();
     } else {
       // Switch to rest
@@ -971,7 +1015,7 @@ function timerTick() {
         : `Rep ${timerState.repCurrent} done. Rest.`;
       setTimeout(() => speak(msg), 100);
       vibrate([150, 80, 150]);
-      playBeep();
+      playBeep('low');   // Low tone = rest
       updateTimerDisplay();
     }
   } else {
@@ -985,7 +1029,7 @@ function timerTick() {
       : `Rep ${timerState.repCurrent}. Go!`;
     setTimeout(() => speak(msg), 100);
     vibrate([200, 100, 200]);
-    playBeep();
+    playBeep('high');   // High tone = go
     updateTimerDisplay();
   }
 }
@@ -1059,6 +1103,7 @@ function refreshDots(current, total, subPhase) {
 function startTimer() {
   if (timerState.running) return;
   initSpeech(); // Unlock iOS speech synthesis on user gesture
+  initBeeps();  // Pre-generate WAV blobs so first beep isn't delayed
 
   // Announce current phase on first press
   const phase = timerState.phases[timerState.phaseIndex];
@@ -1192,9 +1237,11 @@ function openSetupModal() {
   document.getElementById('voice-picker-group').style.display =
     audioMode === 'voice' ? 'block' : 'none';
 
-  // Populate voices (may not be loaded yet on first open)
-  if (availableVoices.length === 0) loadVoices();
-  else populateVoiceSelect();
+  // iOS often won't have voices until after a user gesture — retry now
+  // since opening settings IS a user gesture
+  loadVoices();
+  // Also refresh the select with whatever we have right now
+  populateVoiceSelect();
 
   document.getElementById('setup-modal').classList.remove('hidden');
 }
@@ -1621,20 +1668,65 @@ function vibrate(pattern) {
   }
 }
 
-// Audio beep (Web Audio API) — plays in all modes except silent
-let audioCtx = null;
-function playBeep() {
+// ---- Beep tones via <audio> + generated WAV ----
+// Using <audio> instead of AudioContext so iOS treats playback as a proper
+// audio-session interruption — this is what pauses Audible/Spotify/podcasts
+// and resumes them automatically when the beep finishes.
+//
+// speechSynthesis already does this natively on iOS (it uses the "speech"
+// audio session category). We match that behavior for beeps by routing
+// through an Audio element, which iOS places in the "playback" session.
+
+const beepCache = {};
+
+// Build a short sine-wave WAV in memory and return a reusable Blob URL.
+// freq: Hz, dur: seconds, fadeMs: ms of linear fade-out
+function makeBeepUrl(freq, dur, fadeMs = 80) {
+  const sr = 22050;
+  const n  = Math.floor(sr * dur);
+  const buf = new ArrayBuffer(44 + n * 2);
+  const v   = new DataView(buf);
+  const str = (off, s) => [...s].forEach((c, i) => v.setUint8(off + i, c.charCodeAt(0)));
+
+  // Minimal WAV header (PCM, 16-bit, mono)
+  str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true);
+  str(8, 'WAVE'); str(12, 'fmt ');
+  v.setUint32(16, 16, true);    // chunk size
+  v.setUint16(20, 1, true);     // PCM
+  v.setUint16(22, 1, true);     // mono
+  v.setUint32(24, sr, true);    // sample rate
+  v.setUint32(28, sr * 2, true);// byte rate
+  v.setUint16(32, 2, true);     // block align
+  v.setUint16(34, 16, true);    // bits per sample
+  str(36, 'data'); v.setUint32(40, n * 2, true);
+
+  const fadeStart = n - Math.floor(sr * fadeMs / 1000);
+  for (let i = 0; i < n; i++) {
+    const env = i >= fadeStart ? (n - i) / (n - fadeStart) : 1;
+    const s   = Math.sin(2 * Math.PI * freq * i / sr) * 0.65 * env;
+    v.setInt16(44 + i * 2, Math.round(s * 32767), true);
+  }
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+
+function getBeepUrl(type) {
+  if (!beepCache[type]) {
+    if (type === 'high')     beepCache.high = makeBeepUrl(880, 0.22);
+    else if (type === 'low') beepCache.low  = makeBeepUrl(523, 0.32); // C5
+    else if (type === 'end') beepCache.end  = makeBeepUrl(660, 0.18); // E5
+  }
+  return beepCache[type];
+}
+
+// Call once from a user-gesture to pre-generate and warm up Audio on iOS
+function initBeeps() {
+  ['high', 'low', 'end'].forEach(getBeepUrl);
+}
+
+function playBeep(type = 'high') {
   if (audioMode === 'silent') return;
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + 0.4);
+    const audio = new Audio(getBeepUrl(type));
+    audio.play().catch(() => {});
   } catch (e) {}
 }
