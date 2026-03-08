@@ -173,6 +173,16 @@
       <div id="timer-header">
         <button id="timer-close-btn" class="icon-btn">✕</button>
         <div id="timer-workout-label">Intervals</div>
+        <button id="test-mode-btn" class="test-mode-btn" title="10× speed for testing">TEST</button>
+      </div>
+
+      <!-- GPS + Distance bar -->
+      <div id="gps-bar">
+        <button id="gps-toggle-btn" class="gps-btn">📍 Track Distance</button>
+        <div id="gps-distance-display" class="hidden">
+          <span id="gps-km">0.00</span><span class="gps-unit"> km</span>
+        </div>
+        <div id="gps-status"></div>
       </div>
 
       <!-- Interval mode -->
@@ -316,7 +326,8 @@
         <h3>Your Log</h3>
         <div id="detail-log-data"></div>
       </div>
-      <button id="detail-close-btn" class="btn btn-secondary btn-large">Close</button>
+      <button id="detail-log-btn" class="btn btn-primary btn-large">Log Workout</button>
+      <button id="detail-close-btn" class="btn btn-ghost">Close</button>
     </div>
   </div>
 

@@ -9,7 +9,10 @@
 // STATE
 // ============================================================
 
-let WORKOUTS = null;   // Loaded from workouts.json
+// Workout data inlined to support file:// and GitHub Pages without a server
+const WORKOUT_DATA = {"program":{"name":"8-Week 2-Mile Training Program","weeks":[{"week":1,"phase":1,"days":[{"day":1,"type":"intervals","label":"Intervals","color":"red","icon":"⚡","description":"Track intervals with full recovery","sets":6,"distance":"400m","rest_seconds":90,"estimated_distance_km":4.5,"instructions":["Warm up 10 min easy jog","6 × 400m at hard effort","90 seconds rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":120,"rest_seconds_timer":90,"repeats":6},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo Run","color":"orange","icon":"🔥","description":"Comfortably hard sustained effort","estimated_distance_km":5.5,"instructions":["Warm up 10 min easy","15 minutes at tempo pace (comfortably hard, 7/10 effort)","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":900},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic base building","estimated_distance_km":8,"instructions":["40–50 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":2,"phase":1,"days":[{"day":1,"type":"intervals","label":"Intervals","color":"red","icon":"⚡","description":"Track intervals with full recovery","sets":6,"distance":"400m","rest_seconds":90,"estimated_distance_km":4.5,"instructions":["Warm up 10 min easy jog","6 × 400m at hard effort","90 seconds rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":120,"rest_seconds_timer":90,"repeats":6},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo Run","color":"orange","icon":"🔥","description":"Comfortably hard sustained effort","estimated_distance_km":5.5,"instructions":["Warm up 10 min easy","15 minutes at tempo pace (comfortably hard, 7/10 effort)","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":900},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic base building","estimated_distance_km":8,"instructions":["40–50 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":3,"phase":1,"days":[{"day":1,"type":"intervals","label":"Intervals","color":"red","icon":"⚡","description":"Track intervals — volume increases","sets":8,"distance":"400m","rest_seconds":90,"estimated_distance_km":5.5,"instructions":["Warm up 10 min easy jog","8 × 400m at hard effort (or 5 × 600m)","90 seconds rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":120,"rest_seconds_timer":90,"repeats":8},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo Run","color":"orange","icon":"🔥","description":"Tempo duration increases this week","estimated_distance_km":6.5,"instructions":["Warm up 10 min easy","20 minutes at tempo pace (comfortably hard, 7/10 effort)","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":1200},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic base building","estimated_distance_km":8,"instructions":["40–50 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":4,"phase":1,"days":[{"day":1,"type":"intervals","label":"Intervals","color":"red","icon":"⚡","description":"Track intervals — peak phase 1 volume","sets":8,"distance":"400m","rest_seconds":90,"estimated_distance_km":5.5,"instructions":["Warm up 10 min easy jog","8 × 400m at hard effort (or 5 × 600m)","90 seconds rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":120,"rest_seconds_timer":90,"repeats":8},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo Run","color":"orange","icon":"🔥","description":"Comfortably hard sustained effort","estimated_distance_km":6.5,"instructions":["Warm up 10 min easy","20 minutes at tempo pace (comfortably hard, 7/10 effort)","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":1200},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic base building","estimated_distance_km":8,"instructions":["40–50 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":5,"phase":2,"days":[{"day":1,"type":"intervals","label":"Race Pace Intervals","color":"red","icon":"⚡","description":"Longer intervals at race pace","sets":4,"distance":"800m","rest_seconds":120,"estimated_distance_km":6,"instructions":["Warm up 10 min easy jog","4 × 800m at race pace (or 3 × 1000m)","2 minutes rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":240,"rest_seconds_timer":120,"repeats":4},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo + Speed","color":"orange","icon":"🔥","description":"Tempo followed by fast 200s","estimated_distance_km":7,"instructions":["Warm up 10 min easy","15 minutes at tempo pace","2 min easy jog recovery","4 × 200m fast (but controlled)","90 sec walk/jog between 200s","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":900},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic run — slightly shorter than Phase 1","estimated_distance_km":7,"instructions":["35–45 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":6,"phase":2,"days":[{"day":1,"type":"intervals","label":"Race Pace Intervals","color":"red","icon":"⚡","description":"Longer intervals at race pace","sets":4,"distance":"800m","rest_seconds":120,"estimated_distance_km":6,"instructions":["Warm up 10 min easy jog","4 × 800m at race pace (or 3 × 1000m)","2 minutes rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":240,"rest_seconds_timer":120,"repeats":4},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo + Speed","color":"orange","icon":"🔥","description":"Tempo followed by fast 200s","estimated_distance_km":7,"instructions":["Warm up 10 min easy","15 minutes at tempo pace","2 min easy jog recovery","4 × 200m fast (but controlled)","90 sec walk/jog between 200s","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":900},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic run","estimated_distance_km":7,"instructions":["35–45 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":7,"phase":2,"days":[{"day":1,"type":"intervals","label":"Race Pace Intervals","color":"red","icon":"⚡","description":"Longer intervals at race pace","sets":4,"distance":"800m","rest_seconds":120,"estimated_distance_km":6,"instructions":["Warm up 10 min easy jog","4 × 800m at race pace (or 3 × 1000m)","2 minutes rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":240,"rest_seconds_timer":120,"repeats":4},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo + Speed","color":"orange","icon":"🔥","description":"Tempo followed by fast 200s","estimated_distance_km":7,"instructions":["Warm up 10 min easy","15 minutes at tempo pace","2 min easy jog recovery","4 × 200m fast (but controlled)","90 sec walk/jog between 200s","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":900},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic run","estimated_distance_km":7,"instructions":["35–45 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":8,"phase":3,"phase_label":"Taper","days":[{"day":1,"type":"intervals","label":"Taper Intervals","color":"red","icon":"⚡","description":"Sharp race pace intervals — low volume","sets":4,"distance":"400m","rest_seconds":90,"estimated_distance_km":4,"instructions":["Warm up 10 min easy jog","4 × 400m at race pace — sharp and fast","90 seconds rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":120,"rest_seconds_timer":90,"repeats":4},{"day":2,"type":"easy","label":"Easy + Strides","color":"green","icon":"🏃","description":"Short easy run to stay sharp","estimated_distance_km":4,"instructions":["15 minutes easy jog","4 × 20 second strides","Walk 60 seconds between strides","Stay relaxed — legs should feel fresh"],"timer_type":"countdown","work_seconds":900,"stride_count":4,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"race","label":"2-Mile Time Trial","color":"red","icon":"🏁","description":"Race day — go for it!","estimated_distance_km":3.2,"instructions":["Warm up 15 min easy with a few strides","RUN 2 MILES AS FAST AS YOU CAN","Record your time","Cool down 10 min easy walk/jog"],"timer_type":"stopwatch"}]}]}};
+
+let WORKOUTS = null;   // Set from WORKOUT_DATA on init
 let progress = null;   // Loaded from localStorage (mirrors progress.json structure)
 
 // Timer state
@@ -39,6 +42,19 @@ const timerState = {
 // Charts
 let charts = {};
 
+// Test mode — 10× speed for trying out timers
+let testMode = false;
+
+// GPS tracking state
+const gpsState = {
+  active: false,
+  watchId: null,
+  distanceKm: 0,
+  lastLat: null,
+  lastLon: null,
+  error: null,
+};
+
 // Current log context
 let pendingLogWorkout = null;  // workout object to log
 let selectedRPE = null;
@@ -47,40 +63,47 @@ let selectedRPE = null;
 // INIT
 // ============================================================
 
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    await loadWorkouts();
-    loadProgress();
-    renderNav();
-    renderTodayPage();
-    renderWorkoutsPage();
-    renderProgressPage();
-    bindEvents();
-  } catch (err) {
-    console.error('App init error:', err);
-  }
+document.addEventListener('DOMContentLoaded', () => {
+  loadWorkouts();
+  loadProgress();
+  renderNav();
+  renderTodayPage();
+  renderWorkoutsPage();
+  renderProgressPage();
+  bindEvents();
 });
 
 // ============================================================
 // DATA LOADING
 // ============================================================
 
-async function loadWorkouts() {
-  const res = await fetch('workouts.json');
-  const data = await res.json();
-  WORKOUTS = data.program.weeks;
+function loadWorkouts() {
+  WORKOUTS = WORKOUT_DATA.program.weeks;
+}
+
+function defaultProgress() {
+  return {
+    version: 2,
+    startDate: "2026-03-02",   // Program started Mon Mar 2 — Week 2 begins Mon Mar 9
+    workoutDays: [1, 3, 5, 6], // Mon, Wed, Fri, Sat
+    workouts: []
+  };
 }
 
 function loadProgress() {
   const raw = localStorage.getItem('runTrainerProgress');
   if (raw) {
-    progress = JSON.parse(raw);
+    const saved = JSON.parse(raw);
+    // Version migration: clear any old seeded data
+    if (!saved.version || saved.version < 2) {
+      progress = defaultProgress();
+      saveProgress();
+      return;
+    }
+    progress = saved;
   } else {
-    progress = {
-      startDate: null,
-      workoutDays: [1, 3, 5, 6],  // Mon, Wed, Fri, Sat (0=Sun)
-      workouts: []
-    };
+    progress = defaultProgress();
+    saveProgress();
   }
 }
 
@@ -619,8 +642,21 @@ function openTimerModal(workout, weekIndex, dayIndex) {
   timerState.workout = { ...workout, weekIndex, dayIndex };
   resetTimer();
 
+  // Reset GPS UI
+  stopGPS();
+  gpsState.distanceKm = 0;
+  gpsState.lastLat = null;
+  gpsState.lastLon = null;
+  document.getElementById('gps-km').textContent = '0.00';
+  document.getElementById('gps-status').textContent = '';
+  document.getElementById('gps-distance-display').classList.add('hidden');
+  document.getElementById('gps-toggle-btn').textContent = '📍 Track Distance';
+  document.getElementById('gps-toggle-btn').classList.remove('active');
+
+  // Reset test mode button visual (keep testMode state)
+  document.getElementById('test-mode-btn').classList.toggle('active', testMode);
+
   const modal = document.getElementById('timer-modal');
-  const inner = document.getElementById('timer-inner');
   modal.classList.remove('hidden');
 
   document.getElementById('timer-workout-label').textContent = workout.label;
@@ -865,7 +901,9 @@ function timerTick() {
 function startTimer() {
   if (timerState.running) return;
   timerState.running = true;
-  timerState.interval = setInterval(timerTick, 1000);
+  // Test mode ticks every 100ms (10× real speed)
+  const ms = testMode ? 100 : 1000;
+  timerState.interval = setInterval(timerTick, ms);
   document.getElementById('timer-play-btn').textContent = '⏸';
   document.getElementById('timer-inner').classList.add('timer-running');
 }
@@ -899,6 +937,7 @@ function skipCurrentPhase() {
 
 function closeTimerModal() {
   stopTimer();
+  stopGPS();
   document.getElementById('timer-modal').classList.add('hidden');
 }
 
@@ -921,6 +960,14 @@ function openLogModal(workout, weekIndex, dayIndex) {
   if (timerState.mode === 'stopwatch' && timerState.elapsed > 0) {
     document.getElementById('log-time').value = formatDuration(timerState.elapsed);
   }
+
+  // Pre-fill GPS distance if tracking was active
+  if (gpsState.distanceKm > 0) {
+    document.getElementById('log-distance').value = gpsState.distanceKm.toFixed(2);
+  }
+
+  // Stop GPS when opening log (workout is over)
+  stopGPS();
 
   document.getElementById('log-modal').classList.remove('hidden');
 }
@@ -1014,11 +1061,7 @@ function saveSetup() {
 
 function resetAllProgress() {
   if (!confirm('Reset all progress? This cannot be undone.')) return;
-  progress = {
-    startDate: null,
-    workoutDays: [1, 3, 5, 6],
-    workouts: []
-  };
+  progress = defaultProgress();
   saveProgress();
   document.getElementById('setup-modal').classList.add('hidden');
   renderTodayPage();
@@ -1053,16 +1096,24 @@ function openDetailModal(weekIndex, dayIndex) {
 
   if (entry) {
     loggedSection.classList.remove('hidden');
-    logData.innerHTML = `
-      ${entry.distance ? `Distance: ${entry.distance} km<br>` : ''}
-      ${entry.time ? `Time: ${entry.time}<br>` : ''}
-      ${entry.pace ? `Pace: ${entry.pace} min/km<br>` : ''}
-      ${entry.rpe != null ? `RPE: ${entry.rpe}/10<br>` : ''}
-      ${entry.notes ? `Notes: ${entry.notes}` : ''}
-    `.trim();
+    logData.innerHTML = [
+      entry.distance ? `Distance: ${entry.distance} km` : '',
+      entry.time     ? `Time: ${entry.time}` : '',
+      entry.pace     ? `Pace: ${entry.pace} min/km` : '',
+      entry.rpe != null ? `RPE: ${entry.rpe}/10` : '',
+      entry.notes    ? `Notes: ${entry.notes}` : '',
+    ].filter(Boolean).join('<br>');
   } else {
     loggedSection.classList.add('hidden');
   }
+
+  // Update Log button label depending on whether already logged
+  const logBtn = document.getElementById('detail-log-btn');
+  logBtn.textContent = entry ? 'Edit Log' : 'Log Workout';
+
+  // Store context on the button for the click handler
+  logBtn.dataset.weekIndex = weekIndex;
+  logBtn.dataset.dayIndex = dayIndex;
 
   document.getElementById('detail-modal').classList.remove('hidden');
 }
@@ -1098,6 +1149,103 @@ function renderNav() {
 }
 
 // ============================================================
+// GPS TRACKING
+// ============================================================
+
+function toggleGPS() {
+  if (gpsState.active) {
+    stopGPS();
+  } else {
+    startGPS();
+  }
+}
+
+function startGPS() {
+  if (!navigator.geolocation) {
+    document.getElementById('gps-status').textContent = 'GPS not supported on this device.';
+    return;
+  }
+
+  gpsState.distanceKm = 0;
+  gpsState.lastLat = null;
+  gpsState.lastLon = null;
+  gpsState.error = null;
+  gpsState.active = true;
+
+  updateGPSDisplay();
+  document.getElementById('gps-status').textContent = 'Acquiring signal…';
+  document.getElementById('gps-toggle-btn').textContent = '🛑 Stop GPS';
+  document.getElementById('gps-toggle-btn').classList.add('active');
+  document.getElementById('gps-distance-display').classList.remove('hidden');
+
+  gpsState.watchId = navigator.geolocation.watchPosition(
+    onGPSPosition,
+    onGPSError,
+    { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+  );
+}
+
+function stopGPS() {
+  if (gpsState.watchId != null) {
+    navigator.geolocation.clearWatch(gpsState.watchId);
+    gpsState.watchId = null;
+  }
+  gpsState.active = false;
+  document.getElementById('gps-toggle-btn').textContent = '📍 Track Distance';
+  document.getElementById('gps-toggle-btn').classList.remove('active');
+  document.getElementById('gps-status').textContent =
+    gpsState.distanceKm > 0 ? `Final: ${gpsState.distanceKm.toFixed(2)} km` : '';
+}
+
+function onGPSPosition(pos) {
+  const { latitude, longitude, accuracy } = pos.coords;
+
+  // Only accept fixes with reasonable accuracy (< 30m)
+  if (accuracy > 30) {
+    document.getElementById('gps-status').textContent = `Low accuracy (${Math.round(accuracy)}m) — waiting…`;
+    return;
+  }
+
+  document.getElementById('gps-status').textContent = `±${Math.round(accuracy)}m accuracy`;
+
+  if (gpsState.lastLat !== null) {
+    const d = haversine(gpsState.lastLat, gpsState.lastLon, latitude, longitude);
+    // Filter out GPS noise: ignore jumps < 2m or > 50m between ticks
+    if (d >= 0.002 && d <= 0.05) {
+      gpsState.distanceKm += d;
+      updateGPSDisplay();
+    }
+  }
+
+  gpsState.lastLat = latitude;
+  gpsState.lastLon = longitude;
+}
+
+function onGPSError(err) {
+  const msgs = {
+    1: 'Location permission denied. Enable in Settings → Safari → Location.',
+    2: 'GPS signal unavailable.',
+    3: 'GPS timed out.',
+  };
+  document.getElementById('gps-status').textContent = msgs[err.code] || 'GPS error.';
+}
+
+function updateGPSDisplay() {
+  document.getElementById('gps-km').textContent = gpsState.distanceKm.toFixed(2);
+}
+
+// Haversine formula — returns distance in km between two lat/lon points
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+// ============================================================
 // EVENT BINDING
 // ============================================================
 
@@ -1128,9 +1276,25 @@ function bindEvents() {
     });
   });
 
+  // Test mode toggle
+  document.getElementById('test-mode-btn').addEventListener('click', () => {
+    testMode = !testMode;
+    document.getElementById('test-mode-btn').classList.toggle('active', testMode);
+    // Restart interval at new speed if running
+    if (timerState.running) {
+      clearInterval(timerState.interval);
+      const ms = testMode ? 100 : 1000;
+      timerState.interval = setInterval(timerTick, ms);
+    }
+  });
+
+  // GPS toggle
+  document.getElementById('gps-toggle-btn').addEventListener('click', toggleGPS);
+
   // Timer modal
   document.getElementById('timer-close-btn').addEventListener('click', () => {
     if (confirm('End workout? You can log it manually from the Today page.')) {
+      stopGPS();
       closeTimerModal();
     }
   });
@@ -1175,6 +1339,14 @@ function bindEvents() {
   });
 
   // Detail modal
+  document.getElementById('detail-log-btn').addEventListener('click', (e) => {
+    const wIdx = parseInt(e.currentTarget.dataset.weekIndex);
+    const dIdx = parseInt(e.currentTarget.dataset.dayIndex);
+    const workout = WORKOUTS[wIdx].days[dIdx];
+    document.getElementById('detail-modal').classList.add('hidden');
+    openLogModal(workout, wIdx, dIdx);
+  });
+
   document.getElementById('detail-close-btn').addEventListener('click', () => {
     document.getElementById('detail-modal').classList.add('hidden');
   });
