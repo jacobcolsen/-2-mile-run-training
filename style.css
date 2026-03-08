@@ -726,6 +726,50 @@ body {
   color: #fff;
 }
 
+/* Segmented picker (audio mode) */
+.segment-picker {
+  display: flex;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  gap: 4px;
+}
+
+.segment-btn {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.segment-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Voice select dropdown */
+#voice-select {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-size: 16px;
+  font-family: var(--font);
+  color: var(--text);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  color-scheme: dark;
+}
+
 #reset-section {
   margin-top: 32px;
   padding-top: 24px;
@@ -761,28 +805,6 @@ body {
   font-weight: 700;
   color: var(--text-muted);
   flex: 1;
-}
-
-/* Test mode button */
-.test-mode-btn {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  padding: 5px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-family: var(--font);
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-
-.test-mode-btn.active {
-  background: rgba(251, 191, 36, 0.15);
-  border-color: var(--gold);
-  color: var(--gold);
 }
 
 /* GPS bar */
@@ -841,66 +863,100 @@ body {
   width: 100%;
 }
 
-/* Timer mode containers */
-.timer-mode {
+/* ---- Unified Timer Body ---- */
+#timer-body {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 0 32px;
+  gap: 0;
 }
 
-.timer-mode.hidden { display: none; }
+/* Phase label — color changes by workout phase */
+#timer-phase-label {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: color 0.3s;
+}
 
-/* The big time display */
-#timer-display,
-#timer-display-cd,
-#timer-display-sw,
-#timer-display-stride {
-  font-size: 86px;
+/* Color variants driven by data-color on #timer-inner */
+#timer-inner[data-color="red"]    #timer-phase-label { color: var(--red); }
+#timer-inner[data-color="green"]  #timer-phase-label { color: var(--green); }
+#timer-inner[data-color="orange"] #timer-phase-label { color: var(--orange); }
+#timer-inner[data-color="blue"]   #timer-phase-label { color: var(--blue); }
+#timer-inner[data-color="rest"]   #timer-phase-label { color: var(--green); }
+
+#timer-inner[data-color="red"]    #timer-main-display { color: var(--red); }
+#timer-inner[data-color="orange"] #timer-main-display { color: var(--orange); }
+#timer-inner[data-color="blue"]   #timer-main-display { color: var(--blue); }
+#timer-inner[data-color="rest"]   #timer-main-display { color: var(--green); }
+
+#timer-phase-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  min-height: 18px;
+}
+
+/* The big countdown number */
+#timer-main-display {
+  font-size: 88px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: -3px;
   color: var(--text);
   line-height: 1;
-  margin: 12px 0;
+  margin: 8px 0;
   font-family: var(--mono);
+  transition: color 0.3s;
 }
 
-#interval-phase-label,
-#countdown-label,
-#stopwatch-label,
-#stride-phase-label {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-/* Phase color coding */
-#timer-interval-mode.phase-work #interval-phase-label { color: var(--red); }
-#timer-interval-mode.phase-rest #interval-phase-label { color: var(--green); }
-
-#interval-progress-row {
+/* Rep counter */
+#timer-rep-row {
   font-size: 22px;
   font-weight: 700;
   color: var(--text-muted);
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
-#interval-dots {
+/* Progress bar */
+#timer-progress-wrap {
+  width: 100%;
+  height: 8px;
+  background: var(--surface2);
+  border-radius: 100px;
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+#timer-progress-bar {
+  height: 100%;
+  width: 100%;
+  background: var(--accent);
+  border-radius: 100px;
+  transition: width 1s linear;
+}
+
+/* Rep dots */
+#timer-dots {
   display: flex;
-  gap: 8px;
-  margin-top: 20px;
+  gap: 10px;
+  margin-top: 24px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .interval-dot {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   border: 2px solid var(--border);
   background: transparent;
@@ -917,28 +973,10 @@ body {
   border-color: var(--red);
 }
 
-/* Countdown progress bar */
-#countdown-progress-bar-wrap {
-  width: 100%;
-  height: 8px;
-  background: var(--surface2);
-  border-radius: 100px;
-  margin-top: 24px;
-  overflow: hidden;
-}
-
-#countdown-progress-bar {
-  height: 100%;
-  width: 100%;
-  background: var(--accent);
-  border-radius: 100px;
-  transition: width 1s linear;
-}
-
-#stride-progress-row {
-  font-size: 18px;
-  color: var(--text-muted);
-  margin-top: 8px;
+.interval-dot.current-rest {
+  background: var(--green);
+  border-color: var(--green);
+  opacity: 0.5;
 }
 
 /* Timer Controls */

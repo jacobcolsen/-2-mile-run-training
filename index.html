@@ -173,7 +173,7 @@
       <div id="timer-header">
         <button id="timer-close-btn" class="icon-btn">✕</button>
         <div id="timer-workout-label">Intervals</div>
-        <button id="test-mode-btn" class="test-mode-btn" title="10× speed for testing">TEST</button>
+        <button id="voice-btn" class="icon-btn" title="Toggle voice cues">🔊</button>
       </div>
 
       <!-- GPS + Distance bar -->
@@ -185,47 +185,25 @@
         <div id="gps-status"></div>
       </div>
 
-      <!-- Interval mode -->
-      <div id="timer-interval-mode" class="timer-mode hidden">
-        <div id="interval-phase-label">Work</div>
-        <div id="timer-display">0:00</div>
-        <div id="interval-progress-row">
-          <span id="interval-current">1</span>
-          <span> / </span>
-          <span id="interval-total">6</span>
+      <!-- Unified phase display -->
+      <div id="timer-body">
+        <div id="timer-phase-label">Ready</div>
+        <div id="timer-phase-sub"></div>
+        <div id="timer-main-display">0:00</div>
+        <div id="timer-rep-row" class="hidden">
+          Rep <span id="timer-rep-current">1</span> of <span id="timer-rep-total">6</span>
         </div>
-        <div id="interval-dots"></div>
-      </div>
-
-      <!-- Countdown / stopwatch mode -->
-      <div id="timer-countdown-mode" class="timer-mode hidden">
-        <div id="countdown-label">Easy Run</div>
-        <div id="timer-display-cd">0:00</div>
-        <div id="countdown-progress-bar-wrap">
-          <div id="countdown-progress-bar"></div>
+        <div id="timer-progress-wrap" class="hidden">
+          <div id="timer-progress-bar"></div>
         </div>
-      </div>
-
-      <!-- Stride mode (sub-section after countdown) -->
-      <div id="timer-stride-mode" class="timer-mode hidden">
-        <div id="stride-phase-label">Stride</div>
-        <div id="timer-display-stride">0:20</div>
-        <div id="stride-progress-row">
-          Stride <span id="stride-current">1</span> of <span id="stride-total">6</span>
-        </div>
-      </div>
-
-      <!-- Stopwatch mode -->
-      <div id="timer-stopwatch-mode" class="timer-mode hidden">
-        <div id="stopwatch-label">Long Run</div>
-        <div id="timer-display-sw">0:00:00</div>
+        <div id="timer-dots" class="hidden"></div>
       </div>
 
       <!-- Controls -->
       <div id="timer-controls">
-        <button id="timer-reset-btn" class="ctrl-btn">↺</button>
+        <button id="timer-reset-btn" class="ctrl-btn" title="Restart workout">↺</button>
         <button id="timer-play-btn" class="ctrl-btn ctrl-btn-main">▶</button>
-        <button id="timer-skip-btn" class="ctrl-btn">⏭</button>
+        <button id="timer-skip-btn" class="ctrl-btn" title="Skip phase">⏭</button>
       </div>
 
       <button id="timer-done-btn" class="btn btn-primary btn-large">Done — Log Workout</button>
@@ -301,6 +279,21 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label>Audio Cues</label>
+        <div id="audio-mode-picker" class="segment-picker">
+          <button class="segment-btn active" data-mode="voice">Voice</button>
+          <button class="segment-btn" data-mode="beeps">Beeps only</button>
+          <button class="segment-btn" data-mode="silent">Silent</button>
+        </div>
+      </div>
+
+      <div id="voice-picker-group" class="form-group">
+        <label for="voice-select">Voice</label>
+        <select id="voice-select"></select>
+        <button id="voice-preview-btn" class="btn btn-secondary" style="margin-top:10px; padding:12px 16px; font-size:15px;">Preview Voice</button>
+      </div>
+
       <button id="setup-save-btn" class="btn btn-primary btn-large">Save Settings</button>
       <button id="setup-cancel-btn" class="btn btn-ghost">Cancel</button>
 
@@ -326,7 +319,8 @@
         <h3>Your Log</h3>
         <div id="detail-log-data"></div>
       </div>
-      <button id="detail-log-btn" class="btn btn-primary btn-large">Log Workout</button>
+      <button id="detail-start-btn" class="btn btn-primary btn-large">▶ Start Workout</button>
+      <button id="detail-log-btn" class="btn btn-secondary">Log Workout</button>
       <button id="detail-close-btn" class="btn btn-ghost">Close</button>
     </div>
   </div>

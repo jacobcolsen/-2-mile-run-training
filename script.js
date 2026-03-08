@@ -15,35 +15,40 @@ const WORKOUT_DATA = {"program":{"name":"8-Week 2-Mile Training Program","weeks"
 let WORKOUTS = null;   // Set from WORKOUT_DATA on init
 let progress = null;   // Loaded from localStorage (mirrors progress.json structure)
 
-// Timer state
+// Phase-based timer state
 const timerState = {
-  mode: null,          // 'interval' | 'countdown' | 'stopwatch' | 'stride'
   running: false,
-  interval: null,      // setInterval handle
-  elapsed: 0,          // seconds elapsed (stopwatch)
-  remaining: 0,        // seconds remaining (countdown)
-  totalSeconds: 0,     // initial seconds for progress bar
-  // Interval specific
-  currentRep: 1,
-  totalReps: 0,
-  phase: 'work',       // 'work' | 'rest'
+  intervalHandle: null,
+
+  phases: [],          // Array of phase objects built per workout
+  phaseIndex: 0,       // Which phase we're in
+
+  // Per-phase counters
+  elapsed: 0,          // seconds elapsed (stopwatch phases)
+  remaining: 0,        // seconds remaining (countdown/interval phases)
+  totalSeconds: 0,     // initial value for progress bar
+
+  // Rep tracking (interval/stride phases)
+  repCurrent: 1,
+  repTotal: 0,
+  subPhase: 'work',    // 'work' | 'rest'
   workSeconds: 0,
   restSeconds: 0,
-  // Stride specific
-  strideTotal: 0,
-  strideCurrent: 1,
-  strideSeconds: 20,
-  strideRestSeconds: 60,
-  // Current workout ref
-  workout: null,
-  afterCountdownStrides: false,
+
+  workout: null,       // full workout object reference
 };
 
 // Charts
 let charts = {};
 
-// Test mode — 10× speed for trying out timers
-let testMode = false;
+// Detail modal context (shared between Start and Log buttons)
+let detailContext = { weekIndex: null, dayIndex: null };
+
+// Audio settings — persisted in localStorage
+// audioMode: 'voice' | 'beeps' | 'silent'
+let audioMode = localStorage.getItem('audioMode') || 'voice';
+let selectedVoiceName = localStorage.getItem('selectedVoice') || '';
+let availableVoices = [];
 
 // GPS tracking state
 const gpsState = {
@@ -71,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderWorkoutsPage();
   renderProgressPage();
   bindEvents();
+  updateVoiceBtn();
 });
 
 // ============================================================
@@ -635,12 +641,217 @@ function renderLogList() {
 }
 
 // ============================================================
+// AUDIO / VOICE CUES
+// ============================================================
+
+// Load available voices — iOS populates these asynchronously
+function loadVoices() {
+  if (!window.speechSynthesis) return;
+  availableVoices = window.speechSynthesis.getVoices()
+    .filter(v => v.lang.startsWith('en'));
+  populateVoiceSelect();
+}
+
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices(); // also try immediately (works on some browsers)
+}
+
+function populateVoiceSelect() {
+  const sel = document.getElementById('voice-select');
+  if (!sel || availableVoices.length === 0) return;
+  sel.innerHTML = '';
+  availableVoices.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v.name;
+    opt.textContent = `${v.name} (${v.lang})`;
+    if (v.name === selectedVoiceName) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // If nothing is selected yet, prefer Samantha or first available
+  if (!selectedVoiceName) {
+    const samantha = availableVoices.find(v => v.name === 'Samantha');
+    const preferred = samantha || availableVoices[0];
+    if (preferred) {
+      selectedVoiceName = preferred.name;
+      sel.value = preferred.name;
+    }
+  }
+}
+
+function getVoice() {
+  return availableVoices.find(v => v.name === selectedVoiceName) || availableVoices[0] || null;
+}
+
+// Unlock iOS speech synthesis — must be called from a user gesture
+function initSpeech() {
+  if (!window.speechSynthesis || audioMode !== 'voice') return;
+  const unlock = new SpeechSynthesisUtterance('');
+  window.speechSynthesis.speak(unlock);
+}
+
+function speak(text) {
+  if (audioMode !== 'voice' || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  const voice = getVoice();
+  if (voice) utt.voice = voice;
+  utt.rate = 0.95;   // Slightly slower = more natural
+  utt.pitch = 1.0;
+  utt.volume = 1.0;
+  window.speechSynthesis.speak(utt);
+}
+
+// Called every tick — announces key countdowns
+function announceWarnings(remaining, context) {
+  if (remaining === 30) speak('30 seconds.');
+  if (remaining === 10) speak('10 seconds.');
+  if (remaining === 5)  speak(context === 'rest' ? 'Get ready. 5, 4, 3, 2, 1.' : '5, 4, 3, 2, 1.');
+}
+
+// Called on stopwatch ticks — milestone every 5 minutes
+function announceMilestone(elapsed) {
+  if (elapsed > 0 && elapsed % 300 === 0) {
+    const mins = elapsed / 60;
+    speak(`${mins} ${mins === 1 ? 'minute' : 'minutes'}.`);
+  }
+}
+
+// ============================================================
+// WORKOUT PHASE BUILDER
+// ============================================================
+
+// Returns an ordered array of phase objects for a given workout.
+// Phases auto-advance in sequence — warmup → main set → cooldown etc.
+function buildWorkoutPhases(workout) {
+  const phases = [];
+
+  switch (workout.type) {
+
+    case 'intervals': {
+      const reps = workout.repeats;
+      const dist = workout.distance || '';
+      const rest = workout.rest_seconds_timer || 90;
+      phases.push({
+        kind: 'countdown', label: 'Warm Up', color: 'green',
+        seconds: 600,
+        voiceStart: 'Starting warm up. Easy jog for 10 minutes.',
+      });
+      phases.push({
+        kind: 'intervals', label: 'Intervals', color: 'red',
+        reps, workSeconds: workout.work_seconds, restSeconds: rest,
+        voiceStart: `Warm up complete. ${reps} intervals of ${dist}. Let's go.`,
+        voiceRepStart:  (r, t) => `Rep ${r} of ${t}. Go!`,
+        voiceRestStart: (r, t) => `Rep ${r} done. Rest.`,
+        voiceComplete: 'Intervals complete! Great work.',
+      });
+      phases.push({
+        kind: 'countdown', label: 'Cool Down', color: 'green',
+        seconds: 600,
+        voiceStart: 'Starting cool down. Easy jog for 10 minutes.',
+      });
+      break;
+    }
+
+    case 'easy': {
+      const mins = Math.round((workout.work_seconds || 1800) / 60);
+      phases.push({
+        kind: 'countdown', label: 'Easy Run', color: 'green',
+        seconds: workout.work_seconds || 1800,
+        voiceStart: `Starting ${mins} minute easy run. Comfortable, conversational pace.`,
+      });
+      if (workout.stride_count) {
+        const sc = workout.stride_count;
+        phases.push({
+          kind: 'strides', label: 'Strides', color: 'green',
+          reps: sc,
+          workSeconds: workout.stride_seconds || 20,
+          restSeconds: workout.stride_rest_seconds || 60,
+          voiceStart: `Easy run complete. Now ${sc} strides. Fast but relaxed.`,
+          voiceRepStart:  (r, t) => `Stride ${r} of ${t}. Go!`,
+          voiceRestStart: (r)    => `Stride ${r} done. Walk for 60 seconds.`,
+          voiceComplete: 'All strides done. Great workout!',
+        });
+      }
+      break;
+    }
+
+    case 'tempo': {
+      const tempoMins = Math.round((workout.work_seconds || 900) / 60);
+      const isSpeed = workout.label === 'Tempo + Speed';
+      phases.push({
+        kind: 'countdown', label: 'Warm Up', color: 'green',
+        seconds: 600,
+        voiceStart: 'Starting warm up. Easy jog for 10 minutes.',
+      });
+      phases.push({
+        kind: 'countdown', label: 'Tempo Run', color: 'orange',
+        seconds: workout.work_seconds,
+        voiceStart: `Warm up complete. ${tempoMins} minute tempo run. Comfortably hard — about 7 out of 10 effort.`,
+      });
+      if (isSpeed) {
+        phases.push({
+          kind: 'strides', label: '200m Reps', color: 'red',
+          reps: 4, workSeconds: 45, restSeconds: 90,
+          voiceStart: 'Tempo complete. Now 4 times 200 meters. Fast but controlled.',
+          voiceRepStart:  (r, t) => `200 meter rep ${r} of ${t}. Go fast!`,
+          voiceRestStart: (r)    => `Rep ${r} done. 90 second recovery.`,
+          voiceComplete: 'Speed work complete!',
+        });
+      }
+      phases.push({
+        kind: 'countdown', label: 'Cool Down', color: 'green',
+        seconds: 300,
+        voiceStart: isSpeed
+          ? 'Starting cool down. 5 minutes easy.'
+          : 'Tempo complete! Cool down for 5 minutes.',
+      });
+      break;
+    }
+
+    case 'long': {
+      phases.push({
+        kind: 'stopwatch', label: 'Long Run', color: 'blue',
+        voiceStart: 'Starting long run. Easy comfortable pace. Focus on time on feet.',
+      });
+      break;
+    }
+
+    case 'race': {
+      phases.push({
+        kind: 'stopwatch', label: '2-Mile Time Trial', color: 'red',
+        voiceStart: 'Race time! Run 2 miles as fast as you can. Good luck!',
+      });
+      break;
+    }
+
+    default: {
+      phases.push({
+        kind: 'stopwatch', label: workout.label, color: 'green',
+        voiceStart: `Starting ${workout.label}.`,
+      });
+    }
+  }
+
+  // Annotate each phase with its index and total count
+  phases.forEach((p, i) => {
+    p.phaseIndex = i;
+    p.totalPhases = phases.length;
+    p.phaseLabel = phases.length > 1 ? `Phase ${i + 1} of ${phases.length}` : '';
+  });
+
+  return phases;
+}
+
+// ============================================================
 // TIMER MODAL
 // ============================================================
 
 function openTimerModal(workout, weekIndex, dayIndex) {
   timerState.workout = { ...workout, weekIndex, dayIndex };
-  resetTimer();
+  timerState.phases = buildWorkoutPhases(workout);
+  timerState.running = false;
+  clearInterval(timerState.intervalHandle);
 
   // Reset GPS UI
   stopGPS();
@@ -653,257 +864,212 @@ function openTimerModal(workout, weekIndex, dayIndex) {
   document.getElementById('gps-toggle-btn').textContent = '📍 Track Distance';
   document.getElementById('gps-toggle-btn').classList.remove('active');
 
-  // Reset test mode button visual (keep testMode state)
-  document.getElementById('test-mode-btn').classList.toggle('active', testMode);
-
-  const modal = document.getElementById('timer-modal');
-  modal.classList.remove('hidden');
-
+  // Set up header
   document.getElementById('timer-workout-label').textContent = workout.label;
+  document.getElementById('timer-play-btn').textContent = '▶';
+  document.getElementById('timer-inner').classList.remove('timer-running');
 
-  // Hide all modes
-  document.querySelectorAll('.timer-mode').forEach(m => m.classList.add('hidden'));
+  // Init first phase and show modal
+  initPhase(0);
+  document.getElementById('timer-modal').classList.remove('hidden');
+}
 
-  switch (workout.timer_type) {
-    case 'interval':
-      setupIntervalTimer(workout);
-      break;
-    case 'countdown':
-      if (workout.stride_count && workout.stride_count > 0) {
-        timerState.afterCountdownStrides = true;
-      } else {
-        timerState.afterCountdownStrides = false;
-      }
-      setupCountdownTimer(workout);
-      break;
-    case 'stopwatch':
-      setupStopwatch(workout);
-      break;
-    default:
-      setupStopwatch(workout);
+// Set up state for phase[index] without starting the timer
+function initPhase(index) {
+  const phase = timerState.phases[index];
+  timerState.phaseIndex = index;
+  timerState.subPhase = 'work';
+  timerState.repCurrent = 1;
+  timerState.repTotal = phase.reps || 0;
+
+  if (phase.kind === 'countdown') {
+    timerState.remaining = phase.seconds;
+    timerState.totalSeconds = phase.seconds;
+    timerState.elapsed = 0;
+  } else if (phase.kind === 'intervals' || phase.kind === 'strides') {
+    timerState.workSeconds = phase.workSeconds;
+    timerState.restSeconds = phase.restSeconds;
+    timerState.remaining = phase.workSeconds;
+    timerState.totalSeconds = phase.workSeconds;
+    timerState.elapsed = 0;
+  } else {
+    // stopwatch
+    timerState.elapsed = 0;
+    timerState.remaining = 0;
+    timerState.totalSeconds = 0;
+  }
+
+  updateTimerDisplay();
+}
+
+// Advance to the next phase (called when current phase completes)
+function advancePhase() {
+  vibrate([200, 100, 200]);
+  playBeep();
+
+  if (timerState.phaseIndex < timerState.phases.length - 1) {
+    const nextIndex = timerState.phaseIndex + 1;
+    initPhase(nextIndex);
+    const next = timerState.phases[nextIndex];
+    if (next.voiceStart) setTimeout(() => speak(next.voiceStart), 600);
+  } else {
+    // All phases done — workout complete
+    pauseTimer();
+    speak('Workout complete! Great job!');
+    vibrate([300, 100, 300, 100, 300]);
+    document.getElementById('timer-phase-label').textContent = 'Complete! 🎉';
+    document.getElementById('timer-phase-sub').textContent = '';
   }
 }
 
-// ---- Interval Timer ----
-function setupIntervalTimer(workout) {
-  timerState.mode = 'interval';
-  timerState.currentRep = 1;
-  timerState.totalReps = workout.repeats;
-  timerState.phase = 'work';
-  timerState.workSeconds = workout.work_seconds;
-  timerState.restSeconds = workout.rest_seconds_timer || workout.rest_seconds;
-  timerState.remaining = timerState.workSeconds;
-
-  const mode = document.getElementById('timer-interval-mode');
-  mode.classList.remove('hidden');
-  mode.classList.remove('phase-rest');
-  mode.classList.add('phase-work');
-
-  document.getElementById('interval-total').textContent = timerState.totalReps;
-  updateIntervalDisplay();
-  buildIntervalDots();
-}
-
-function updateIntervalDisplay() {
-  document.getElementById('timer-display').textContent =
-    formatTime(timerState.remaining);
-  document.getElementById('interval-current').textContent = timerState.currentRep;
-  document.getElementById('interval-phase-label').textContent =
-    timerState.phase === 'work' ? 'Work' : 'Rest';
-
-  const mode = document.getElementById('timer-interval-mode');
-  mode.classList.toggle('phase-work', timerState.phase === 'work');
-  mode.classList.toggle('phase-rest', timerState.phase === 'rest');
-
-  updateIntervalDots();
-}
-
-function buildIntervalDots() {
-  const container = document.getElementById('interval-dots');
-  container.innerHTML = '';
-  for (let i = 0; i < timerState.totalReps; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'interval-dot';
-    dot.id = `dot-${i}`;
-    container.appendChild(dot);
-  }
-  updateIntervalDots();
-}
-
-function updateIntervalDots() {
-  for (let i = 0; i < timerState.totalReps; i++) {
-    const dot = document.getElementById(`dot-${i}`);
-    if (!dot) continue;
-    dot.classList.remove('done', 'current');
-    if (i < timerState.currentRep - 1) dot.classList.add('done');
-    else if (i === timerState.currentRep - 1) dot.classList.add('current');
-  }
-}
-
-// ---- Countdown Timer ----
-function setupCountdownTimer(workout) {
-  timerState.mode = 'countdown';
-  timerState.remaining = workout.work_seconds;
-  timerState.totalSeconds = workout.work_seconds;
-
-  const mode = document.getElementById('timer-countdown-mode');
-  mode.classList.remove('hidden');
-  document.getElementById('countdown-label').textContent = workout.label;
-
-  updateCountdownDisplay();
-}
-
-function updateCountdownDisplay() {
-  document.getElementById('timer-display-cd').textContent =
-    formatTime(timerState.remaining);
-  const pct = timerState.totalSeconds > 0
-    ? (timerState.remaining / timerState.totalSeconds) * 100
-    : 0;
-  document.getElementById('countdown-progress-bar').style.width = `${pct}%`;
-}
-
-// ---- Stride Timer (follows a countdown or standalone) ----
-function setupStrideTimer(workout) {
-  timerState.mode = 'stride';
-  timerState.strideTotal = workout.stride_count;
-  timerState.strideCurrent = 1;
-  timerState.strideSeconds = workout.stride_seconds || 20;
-  timerState.strideRestSeconds = workout.stride_rest_seconds || 60;
-  timerState.phase = 'work';
-  timerState.remaining = timerState.strideSeconds;
-
-  document.querySelectorAll('.timer-mode').forEach(m => m.classList.add('hidden'));
-  const mode = document.getElementById('timer-stride-mode');
-  mode.classList.remove('hidden');
-
-  document.getElementById('stride-total').textContent = timerState.strideTotal;
-  updateStrideDisplay();
-}
-
-function updateStrideDisplay() {
-  document.getElementById('timer-display-stride').textContent =
-    formatTime(timerState.remaining);
-  document.getElementById('stride-current').textContent = timerState.strideCurrent;
-  document.getElementById('stride-phase-label').textContent =
-    timerState.phase === 'work' ? 'Stride' : 'Walk';
-}
-
-// ---- Stopwatch ----
-function setupStopwatch(workout) {
-  timerState.mode = 'stopwatch';
-  timerState.elapsed = 0;
-
-  const mode = document.getElementById('timer-stopwatch-mode');
-  mode.classList.remove('hidden');
-  document.getElementById('stopwatch-label').textContent = workout.label;
-  document.getElementById('timer-display-sw').textContent = '0:00:00';
-}
-
-// ---- Core Timer Tick ----
 function timerTick() {
-  const inner = document.getElementById('timer-inner');
+  const phase = timerState.phases[timerState.phaseIndex];
 
-  if (timerState.mode === 'stopwatch') {
+  // --- Stopwatch ---
+  if (phase.kind === 'stopwatch') {
     timerState.elapsed++;
-    document.getElementById('timer-display-sw').textContent =
-      formatDuration(timerState.elapsed);
+    updateTimerDisplay();
+    announceMilestone(timerState.elapsed);
     return;
   }
 
-  if (timerState.mode === 'countdown') {
+  // --- Countdown ---
+  if (phase.kind === 'countdown') {
     if (timerState.remaining > 0) {
       timerState.remaining--;
-      updateCountdownDisplay();
+      updateTimerDisplay();
+      announceWarnings(timerState.remaining, 'work');
     } else {
-      // Countdown done
-      vibrate([200, 100, 200]);
-      playBeep();
-      stopTimer();
-
-      if (timerState.afterCountdownStrides) {
-        // Move to stride timer
-        setupStrideTimer(timerState.workout);
-        // Auto start
-        startTimer();
-      } else {
-        // Done — prompt log
-        inner.classList.add('flash');
-        setTimeout(() => inner.classList.remove('flash'), 800);
-      }
+      advancePhase();
     }
     return;
   }
 
-  if (timerState.mode === 'interval') {
-    if (timerState.remaining > 0) {
-      timerState.remaining--;
-      updateIntervalDisplay();
+  // --- Intervals or Strides ---
+  if (timerState.remaining > 0) {
+    timerState.remaining--;
+    updateTimerDisplay();
+    announceWarnings(timerState.remaining, timerState.subPhase);
+    return;
+  }
+
+  // Phase boundary within rep set
+  if (timerState.subPhase === 'work') {
+    if (timerState.repCurrent >= timerState.repTotal) {
+      // All reps done — go to next workout phase
+      if (phase.voiceComplete) setTimeout(() => speak(phase.voiceComplete), 100);
+      vibrate([200, 100, 200, 100, 200]);
+      playBeep();
+      advancePhase();
     } else {
-      // Phase transition
+      // Switch to rest
+      timerState.subPhase = 'rest';
+      timerState.remaining = timerState.restSeconds;
+      timerState.totalSeconds = timerState.restSeconds;
+      const msg = phase.voiceRestStart
+        ? phase.voiceRestStart(timerState.repCurrent, timerState.repTotal)
+        : `Rep ${timerState.repCurrent} done. Rest.`;
+      setTimeout(() => speak(msg), 100);
       vibrate([150, 80, 150]);
       playBeep();
-
-      if (timerState.phase === 'work') {
-        // Move to rest (or check if last rep)
-        if (timerState.currentRep >= timerState.totalReps) {
-          // All reps done!
-          stopTimer();
-          vibrate([300, 100, 300, 100, 300]);
-          inner.classList.add('flash');
-          setTimeout(() => inner.classList.remove('flash'), 800);
-          document.getElementById('interval-phase-label').textContent = 'Done! 🎉';
-          return;
-        }
-        timerState.phase = 'rest';
-        timerState.remaining = timerState.restSeconds;
-      } else {
-        // Rest done — next rep
-        timerState.currentRep++;
-        timerState.phase = 'work';
-        timerState.remaining = timerState.workSeconds;
-      }
-      updateIntervalDisplay();
+      updateTimerDisplay();
     }
-    return;
+  } else {
+    // Rest done — start next rep
+    timerState.repCurrent++;
+    timerState.subPhase = 'work';
+    timerState.remaining = timerState.workSeconds;
+    timerState.totalSeconds = timerState.workSeconds;
+    const msg = phase.voiceRepStart
+      ? phase.voiceRepStart(timerState.repCurrent, timerState.repTotal)
+      : `Rep ${timerState.repCurrent}. Go!`;
+    setTimeout(() => speak(msg), 100);
+    vibrate([200, 100, 200]);
+    playBeep();
+    updateTimerDisplay();
+  }
+}
+
+function updateTimerDisplay() {
+  const phase = timerState.phases[timerState.phaseIndex];
+
+  // Phase label — shows 'Rest' during rest sub-phases
+  const isRest = (phase.kind === 'intervals' || phase.kind === 'strides') && timerState.subPhase === 'rest';
+  document.getElementById('timer-phase-label').textContent = isRest ? 'Rest' : phase.label;
+  document.getElementById('timer-phase-sub').textContent = phase.phaseLabel || '';
+
+  // Main display
+  if (phase.kind === 'stopwatch') {
+    document.getElementById('timer-main-display').textContent = formatDuration(timerState.elapsed);
+  } else {
+    document.getElementById('timer-main-display').textContent = formatTime(timerState.remaining);
   }
 
-  if (timerState.mode === 'stride') {
-    if (timerState.remaining > 0) {
-      timerState.remaining--;
-      updateStrideDisplay();
-    } else {
-      vibrate([150, 80, 150]);
-      playBeep();
-
-      if (timerState.phase === 'work') {
-        if (timerState.strideCurrent >= timerState.strideTotal) {
-          // All strides done
-          stopTimer();
-          vibrate([300, 100, 300]);
-          inner.classList.add('flash');
-          setTimeout(() => inner.classList.remove('flash'), 800);
-          document.getElementById('stride-phase-label').textContent = 'Done! 🎉';
-          return;
-        }
-        timerState.phase = 'rest';
-        timerState.remaining = timerState.strideRestSeconds;
-      } else {
-        timerState.strideCurrent++;
-        timerState.phase = 'work';
-        timerState.remaining = timerState.strideSeconds;
-      }
-      updateStrideDisplay();
-    }
-    return;
+  // Rep row
+  const repRow = document.getElementById('timer-rep-row');
+  if (phase.kind === 'intervals' || phase.kind === 'strides') {
+    repRow.classList.remove('hidden');
+    document.getElementById('timer-rep-current').textContent = timerState.repCurrent;
+    document.getElementById('timer-rep-total').textContent = timerState.repTotal;
+  } else {
+    repRow.classList.add('hidden');
   }
+
+  // Progress bar
+  const wrap = document.getElementById('timer-progress-wrap');
+  if (phase.kind !== 'stopwatch' && timerState.totalSeconds > 0) {
+    wrap.classList.remove('hidden');
+    const pct = (timerState.remaining / timerState.totalSeconds) * 100;
+    document.getElementById('timer-progress-bar').style.width = `${pct}%`;
+  } else {
+    wrap.classList.add('hidden');
+  }
+
+  // Rep dots
+  const dotsEl = document.getElementById('timer-dots');
+  if (phase.kind === 'intervals' || phase.kind === 'strides') {
+    dotsEl.classList.remove('hidden');
+    refreshDots(timerState.repCurrent, timerState.repTotal, timerState.subPhase);
+  } else {
+    dotsEl.classList.add('hidden');
+  }
+
+  // Color theme on the container drives CSS variables
+  const color = isRest ? 'rest' : (phase.color || 'default');
+  document.getElementById('timer-inner').dataset.color = color;
+}
+
+function refreshDots(current, total, subPhase) {
+  const container = document.getElementById('timer-dots');
+  if (container.children.length !== total) {
+    container.innerHTML = '';
+    for (let i = 0; i < total; i++) {
+      const d = document.createElement('div');
+      d.className = 'interval-dot';
+      container.appendChild(d);
+    }
+  }
+  Array.from(container.children).forEach((dot, i) => {
+    dot.classList.remove('done', 'current', 'current-rest');
+    if (i < current - 1) dot.classList.add('done');
+    else if (i === current - 1) dot.classList.add(subPhase === 'rest' ? 'current-rest' : 'current');
+  });
 }
 
 function startTimer() {
   if (timerState.running) return;
+  initSpeech(); // Unlock iOS speech synthesis on user gesture
+
+  // Announce current phase on first press
+  const phase = timerState.phases[timerState.phaseIndex];
+  const isFirstTick = timerState.elapsed === 0 &&
+    (phase.kind === 'stopwatch' || timerState.remaining === timerState.totalSeconds);
+  if (isFirstTick && phase.voiceStart) {
+    setTimeout(() => speak(phase.voiceStart), 400);
+  }
+
   timerState.running = true;
-  // Test mode ticks every 100ms (10× real speed)
-  const ms = testMode ? 100 : 1000;
-  timerState.interval = setInterval(timerTick, ms);
+  timerState.intervalHandle = setInterval(timerTick, 1000);
   document.getElementById('timer-play-btn').textContent = '⏸';
   document.getElementById('timer-inner').classList.add('timer-running');
 }
@@ -911,32 +1077,21 @@ function startTimer() {
 function pauseTimer() {
   if (!timerState.running) return;
   timerState.running = false;
-  clearInterval(timerState.interval);
+  clearInterval(timerState.intervalHandle);
   document.getElementById('timer-play-btn').textContent = '▶';
   document.getElementById('timer-inner').classList.remove('timer-running');
 }
 
-function stopTimer() {
-  pauseTimer();
-}
-
-function resetTimer() {
-  stopTimer();
-  timerState.elapsed = 0;
-  timerState.remaining = 0;
-  timerState.currentRep = 1;
-  timerState.phase = 'work';
-  timerState.strideCurrent = 1;
-}
-
 function skipCurrentPhase() {
-  // Jump to end of current phase
+  const phase = timerState.phases[timerState.phaseIndex];
+  if (phase.kind === 'stopwatch') return; // nothing to skip on a stopwatch
   timerState.remaining = 0;
-  timerTick();
+  timerTick(); // trigger the boundary logic immediately
 }
 
 function closeTimerModal() {
-  stopTimer();
+  pauseTimer();
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
   stopGPS();
   document.getElementById('timer-modal').classList.add('hidden');
 }
@@ -1020,19 +1175,26 @@ function saveLog() {
 // ============================================================
 
 function openSetupModal() {
-  // Pre-fill
-  if (progress.startDate) {
-    document.getElementById('start-date-input').value = progress.startDate;
-  } else {
-    // Default to today
-    document.getElementById('start-date-input').value = todayISO();
-  }
+  // Pre-fill date
+  document.getElementById('start-date-input').value =
+    progress.startDate || todayISO();
 
   // Day picker
   document.querySelectorAll('.day-btn').forEach(btn => {
     const dow = parseInt(btn.dataset.day);
     btn.classList.toggle('active', progress.workoutDays.includes(dow));
   });
+
+  // Audio mode picker
+  document.querySelectorAll('.segment-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === audioMode);
+  });
+  document.getElementById('voice-picker-group').style.display =
+    audioMode === 'voice' ? 'block' : 'none';
+
+  // Populate voices (may not be loaded yet on first open)
+  if (availableVoices.length === 0) loadVoices();
+  else populateVoiceSelect();
 
   document.getElementById('setup-modal').classList.remove('hidden');
 }
@@ -1053,6 +1215,17 @@ function saveSetup() {
     alert('Please select at least one workout day.');
     return;
   }
+
+  // Save audio prefs
+  const activeMode = document.querySelector('.segment-btn.active')?.dataset.mode || 'voice';
+  audioMode = activeMode;
+  localStorage.setItem('audioMode', audioMode);
+  const voiceSel = document.getElementById('voice-select');
+  if (voiceSel.value) {
+    selectedVoiceName = voiceSel.value;
+    localStorage.setItem('selectedVoice', selectedVoiceName);
+  }
+  updateVoiceBtn();
 
   progress.startDate = dateInput;
   progress.workoutDays = selectedDays.sort((a, b) => a - b);
@@ -1111,13 +1284,11 @@ function openDetailModal(weekIndex, dayIndex) {
     loggedSection.classList.add('hidden');
   }
 
-  // Update Log button label depending on whether already logged
-  const logBtn = document.getElementById('detail-log-btn');
-  logBtn.textContent = entry ? 'Edit Log' : 'Log Workout';
+  // Store context for the Start and Log button handlers
+  detailContext = { weekIndex, dayIndex };
 
-  // Store context on the button for the click handler
-  logBtn.dataset.weekIndex = weekIndex;
-  logBtn.dataset.dayIndex = dayIndex;
+  // Update button labels
+  document.getElementById('detail-log-btn').textContent = entry ? 'Edit Log' : 'Log Workout';
 
   document.getElementById('detail-modal').classList.remove('hidden');
 }
@@ -1280,49 +1451,75 @@ function bindEvents() {
     });
   });
 
-  // Test mode toggle
-  document.getElementById('test-mode-btn').addEventListener('click', () => {
-    testMode = !testMode;
-    document.getElementById('test-mode-btn').classList.toggle('active', testMode);
-    // Restart interval at new speed if running
-    if (timerState.running) {
-      clearInterval(timerState.interval);
-      const ms = testMode ? 100 : 1000;
-      timerState.interval = setInterval(timerTick, ms);
+  // Quick mute toggle on the timer screen
+  document.getElementById('voice-btn').addEventListener('click', () => {
+    if (audioMode === 'silent') {
+      audioMode = localStorage.getItem('audioMode') || 'voice';
+    } else {
+      audioMode = 'silent';
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
     }
+    updateVoiceBtn();
+  });
+
+  // Audio mode segmented picker
+  document.querySelectorAll('.segment-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const mode = btn.dataset.mode;
+      document.getElementById('voice-picker-group').style.display =
+        mode === 'voice' ? 'block' : 'none';
+    });
+  });
+
+  // Voice preview button
+  document.getElementById('voice-preview-btn').addEventListener('click', () => {
+    const sel = document.getElementById('voice-select');
+    selectedVoiceName = sel.value;
+    const savedMode = audioMode;
+    audioMode = 'voice'; // temporarily force voice for preview
+    initSpeech();
+    setTimeout(() => speak("Rep 3 of 6. Go! 10 seconds. Intervals complete, great work!"), 200);
+    audioMode = savedMode;
+  });
+
+  // Voice select change
+  document.getElementById('voice-select').addEventListener('change', (e) => {
+    selectedVoiceName = e.target.value;
   });
 
   // GPS toggle
   document.getElementById('gps-toggle-btn').addEventListener('click', toggleGPS);
 
-  // Timer modal
+  // Timer modal — close
   document.getElementById('timer-close-btn').addEventListener('click', () => {
-    if (confirm('End workout? You can log it manually from the Today page.')) {
-      stopGPS();
+    if (confirm('End workout? You can log it manually.')) {
       closeTimerModal();
     }
   });
 
+  // Timer modal — play/pause
   document.getElementById('timer-play-btn').addEventListener('click', () => {
     if (timerState.running) pauseTimer();
     else startTimer();
   });
 
+  // Timer modal — restart from phase 1
   document.getElementById('timer-reset-btn').addEventListener('click', () => {
     if (!timerState.workout) return;
-    stopTimer();
-    // Re-setup
-    if (timerState.workout.timer_type === 'interval') setupIntervalTimer(timerState.workout);
-    else if (timerState.workout.timer_type === 'countdown') setupCountdownTimer(timerState.workout);
-    else setupStopwatch(timerState.workout);
+    pauseTimer();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    initPhase(0);
   });
 
+  // Timer modal — skip current phase
   document.getElementById('timer-skip-btn').addEventListener('click', () => {
-    if (timerState.running) skipCurrentPhase();
+    skipCurrentPhase();
   });
 
+  // Timer modal — done, open log
   document.getElementById('timer-done-btn').addEventListener('click', () => {
-    stopTimer();
     const w = timerState.workout;
     closeTimerModal();
     if (w) openLogModal(w, w.weekIndex, w.dayIndex);
@@ -1342,13 +1539,22 @@ function bindEvents() {
     });
   });
 
-  // Detail modal
-  document.getElementById('detail-log-btn').addEventListener('click', (e) => {
-    const wIdx = parseInt(e.currentTarget.dataset.weekIndex);
-    const dIdx = parseInt(e.currentTarget.dataset.dayIndex);
-    const workout = WORKOUTS[wIdx].days[dIdx];
+  // Detail modal — Start Workout
+  document.getElementById('detail-start-btn').addEventListener('click', () => {
+    const { weekIndex, dayIndex } = detailContext;
+    if (weekIndex === null) return;
+    const workout = WORKOUTS[weekIndex].days[dayIndex];
     document.getElementById('detail-modal').classList.add('hidden');
-    openLogModal(workout, wIdx, dIdx);
+    openTimerModal(workout, weekIndex, dayIndex);
+  });
+
+  // Detail modal — Log Workout / Edit Log
+  document.getElementById('detail-log-btn').addEventListener('click', () => {
+    const { weekIndex, dayIndex } = detailContext;
+    if (weekIndex === null) return;
+    const workout = WORKOUTS[weekIndex].days[dayIndex];
+    document.getElementById('detail-modal').classList.add('hidden');
+    openLogModal(workout, weekIndex, dayIndex);
   });
 
   document.getElementById('detail-close-btn').addEventListener('click', () => {
@@ -1360,7 +1566,7 @@ function bindEvents() {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.classList.add('hidden');
-        if (modal.id === 'timer-modal') stopTimer();
+        if (modal.id === 'timer-modal') pauseTimer();
       }
     });
   });
@@ -1401,6 +1607,13 @@ function capitalise(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+function updateVoiceBtn() {
+  const btn = document.getElementById('voice-btn');
+  if (!btn) return;
+  const icons = { voice: '🔊', beeps: '🔔', silent: '🔇' };
+  btn.textContent = icons[audioMode] || '🔊';
+}
+
 // Vibration
 function vibrate(pattern) {
   if (navigator.vibrate) {
@@ -1408,9 +1621,10 @@ function vibrate(pattern) {
   }
 }
 
-// Audio beep (Web Audio API)
+// Audio beep (Web Audio API) — plays in all modes except silent
 let audioCtx = null;
 function playBeep() {
+  if (audioMode === 'silent') return;
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = audioCtx.createOscillator();
