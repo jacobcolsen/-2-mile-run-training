@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <title>2-Mile Trainer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ==================== APP SHELL ==================== -->
+  <div id="app">
+
+    <!-- ===== HEADER ===== -->
+    <header id="app-header">
+      <div class="header-inner">
+        <span id="header-title">2-Mile Trainer</span>
+        <button id="setup-btn" class="icon-btn" aria-label="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- ==================== PAGES ==================== -->
+
+    <!-- TODAY PAGE -->
+    <main id="page-today" class="page active">
+
+      <!-- No program started state -->
+      <div id="no-program" class="centered-state hidden">
+        <div class="state-icon">🏁</div>
+        <h2>Ready to Train?</h2>
+        <p>Set your program start date to get your daily workouts.</p>
+        <button class="btn btn-primary" id="start-program-btn">Set Start Date</button>
+      </div>
+
+      <!-- Rest day state -->
+      <div id="rest-day" class="centered-state hidden">
+        <div class="state-icon">😴</div>
+        <h2>Rest Day</h2>
+        <p>No workout today. Let your body recover — you've earned it.</p>
+        <p class="hint-text">Next workout is <span id="next-workout-label">tomorrow</span>.</p>
+        <button class="btn btn-secondary" id="view-schedule-btn">View Schedule</button>
+      </div>
+
+      <!-- Program complete state -->
+      <div id="program-complete" class="centered-state hidden">
+        <div class="state-icon">🏆</div>
+        <h2>Program Complete!</h2>
+        <p>You finished the 8-week 2-mile program. Check your progress to see how far you've come.</p>
+        <button class="btn btn-primary" onclick="switchPage('progress')">View Progress</button>
+      </div>
+
+      <!-- Active workout card -->
+      <div id="today-card" class="hidden">
+        <div id="today-badge">
+          <span id="today-week-label">Week 1</span>
+          <span class="dot">·</span>
+          <span id="today-day-label">Day 1</span>
+        </div>
+
+        <div id="workout-header">
+          <span id="workout-icon">⚡</span>
+          <h1 id="workout-title">Intervals</h1>
+        </div>
+
+        <div id="workout-meta">
+          <span id="workout-type-pill" class="type-pill">Intervals</span>
+          <span id="workout-distance">~4.5 km</span>
+        </div>
+
+        <div id="workout-instructions">
+          <ul id="instructions-list"></ul>
+        </div>
+
+        <!-- Completed state overlay -->
+        <div id="workout-completed-badge" class="hidden">
+          <span class="check">✓</span> Workout Logged
+        </div>
+
+        <button id="start-workout-btn" class="btn btn-primary btn-large">Start Workout</button>
+        <button id="log-manual-btn" class="btn btn-secondary">Log Manually</button>
+      </div>
+    </main>
+
+    <!-- WORKOUTS PAGE -->
+    <main id="page-workouts" class="page hidden">
+      <div class="page-header">
+        <h2>8-Week Program</h2>
+        <p class="page-subtitle">Tap a workout to view details</p>
+      </div>
+      <div id="workout-list"></div>
+    </main>
+
+    <!-- PROGRESS PAGE -->
+    <main id="page-progress" class="page hidden">
+      <div class="page-header">
+        <h2>Progress</h2>
+      </div>
+
+      <div id="progress-stats" class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-workouts">0</div>
+          <div class="stat-label">Workouts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-streak">0</div>
+          <div class="stat-label">Week Streak</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-mileage">0</div>
+          <div class="stat-label">Total km</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-completion">0%</div>
+          <div class="stat-label">Complete</div>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <h3>Weekly Mileage</h3>
+        <div class="chart-wrap">
+          <canvas id="chart-mileage"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <h3>2-Mile Time Trial</h3>
+        <p class="chart-hint">Logged after Week 8 time trial</p>
+        <div class="chart-wrap">
+          <canvas id="chart-time"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <h3>RPE History</h3>
+        <div class="chart-wrap">
+          <canvas id="chart-rpe"></canvas>
+        </div>
+      </div>
+
+      <div class="log-section">
+        <h3>Workout Log</h3>
+        <div id="workout-log-list"></div>
+      </div>
+    </main>
+
+    <!-- BOTTOM NAV -->
+    <nav id="bottom-nav">
+      <button class="nav-btn active" data-page="today">
+        <span class="nav-icon">📅</span>
+        <span class="nav-label">Today</span>
+      </button>
+      <button class="nav-btn" data-page="workouts">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Workouts</span>
+      </button>
+      <button class="nav-btn" data-page="progress">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Progress</span>
+      </button>
+    </nav>
+
+  </div><!-- /#app -->
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- TIMER MODAL (full-screen) -->
+  <div id="timer-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Workout Timer">
+    <div id="timer-inner">
+
+      <div id="timer-header">
+        <button id="timer-close-btn" class="icon-btn">✕</button>
+        <div id="timer-workout-label">Intervals</div>
+      </div>
+
+      <!-- Interval mode -->
+      <div id="timer-interval-mode" class="timer-mode hidden">
+        <div id="interval-phase-label">Work</div>
+        <div id="timer-display">0:00</div>
+        <div id="interval-progress-row">
+          <span id="interval-current">1</span>
+          <span> / </span>
+          <span id="interval-total">6</span>
+        </div>
+        <div id="interval-dots"></div>
+      </div>
+
+      <!-- Countdown / stopwatch mode -->
+      <div id="timer-countdown-mode" class="timer-mode hidden">
+        <div id="countdown-label">Easy Run</div>
+        <div id="timer-display-cd">0:00</div>
+        <div id="countdown-progress-bar-wrap">
+          <div id="countdown-progress-bar"></div>
+        </div>
+      </div>
+
+      <!-- Stride mode (sub-section after countdown) -->
+      <div id="timer-stride-mode" class="timer-mode hidden">
+        <div id="stride-phase-label">Stride</div>
+        <div id="timer-display-stride">0:20</div>
+        <div id="stride-progress-row">
+          Stride <span id="stride-current">1</span> of <span id="stride-total">6</span>
+        </div>
+      </div>
+
+      <!-- Stopwatch mode -->
+      <div id="timer-stopwatch-mode" class="timer-mode hidden">
+        <div id="stopwatch-label">Long Run</div>
+        <div id="timer-display-sw">0:00:00</div>
+      </div>
+
+      <!-- Controls -->
+      <div id="timer-controls">
+        <button id="timer-reset-btn" class="ctrl-btn">↺</button>
+        <button id="timer-play-btn" class="ctrl-btn ctrl-btn-main">▶</button>
+        <button id="timer-skip-btn" class="ctrl-btn">⏭</button>
+      </div>
+
+      <button id="timer-done-btn" class="btn btn-primary btn-large">Done — Log Workout</button>
+    </div>
+  </div>
+
+  <!-- LOG WORKOUT MODAL -->
+  <div id="log-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Log Workout">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <h2 class="modal-title">Log Workout</h2>
+
+      <div class="form-group">
+        <label for="log-distance">Distance (km)</label>
+        <input type="number" id="log-distance" inputmode="decimal" placeholder="e.g. 5.2" step="0.1" min="0" />
+      </div>
+      <div class="form-group">
+        <label for="log-time">Time (mm:ss)</label>
+        <input type="text" id="log-time" inputmode="numeric" placeholder="e.g. 28:30" />
+      </div>
+      <div class="form-group">
+        <label for="log-pace">Avg Pace (min/km)</label>
+        <input type="text" id="log-pace" inputmode="decimal" placeholder="e.g. 5:30" />
+      </div>
+      <div class="form-group">
+        <label for="log-rpe">RPE (1–10) — How hard was it?</label>
+        <div id="rpe-picker">
+          <button class="rpe-btn" data-rpe="1">1</button>
+          <button class="rpe-btn" data-rpe="2">2</button>
+          <button class="rpe-btn" data-rpe="3">3</button>
+          <button class="rpe-btn" data-rpe="4">4</button>
+          <button class="rpe-btn" data-rpe="5">5</button>
+          <button class="rpe-btn" data-rpe="6">6</button>
+          <button class="rpe-btn" data-rpe="7">7</button>
+          <button class="rpe-btn" data-rpe="8">8</button>
+          <button class="rpe-btn" data-rpe="9">9</button>
+          <button class="rpe-btn" data-rpe="10">10</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="log-notes">Notes (optional)</label>
+        <textarea id="log-notes" placeholder="How did it feel?"></textarea>
+      </div>
+
+      <button id="log-save-btn" class="btn btn-primary btn-large">Save Workout</button>
+      <button id="log-cancel-btn" class="btn btn-ghost">Cancel</button>
+    </div>
+  </div>
+
+  <!-- SETUP MODAL -->
+  <div id="setup-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Program Setup">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <h2 class="modal-title">Program Setup</h2>
+      <p class="modal-hint">Set the date you started (or will start) Week 1, Day 1.</p>
+
+      <div class="form-group">
+        <label for="start-date-input">Program Start Date</label>
+        <input type="date" id="start-date-input" />
+      </div>
+
+      <div class="form-group">
+        <label>Which days are workout days?</label>
+        <p class="field-hint">Select 4 days per week in order.</p>
+        <div id="day-picker" class="day-picker">
+          <button class="day-btn" data-day="0">Sun</button>
+          <button class="day-btn active" data-day="1">Mon</button>
+          <button class="day-btn" data-day="2">Tue</button>
+          <button class="day-btn active" data-day="3">Wed</button>
+          <button class="day-btn" data-day="4">Thu</button>
+          <button class="day-btn active" data-day="5">Fri</button>
+          <button class="day-btn" data-day="6">Sat</button>
+        </div>
+      </div>
+
+      <button id="setup-save-btn" class="btn btn-primary btn-large">Save Settings</button>
+      <button id="setup-cancel-btn" class="btn btn-ghost">Cancel</button>
+
+      <div id="reset-section">
+        <button id="reset-btn" class="btn btn-danger">Reset All Progress</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKOUT DETAIL MODAL -->
+  <div id="detail-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Workout Detail">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div id="detail-header">
+        <span id="detail-icon">⚡</span>
+        <div>
+          <h2 id="detail-title">Workout</h2>
+          <p id="detail-meta"></p>
+        </div>
+      </div>
+      <ul id="detail-instructions"></ul>
+      <div id="detail-logged-info" class="hidden">
+        <h3>Your Log</h3>
+        <div id="detail-log-data"></div>
+      </div>
+      <button id="detail-close-btn" class="btn btn-secondary btn-large">Close</button>
+    </div>
+  </div>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

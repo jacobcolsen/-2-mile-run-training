@@ -1,0 +1,634 @@
+{
+  "program": {
+    "name": "8-Week 2-Mile Training Program",
+    "weeks": [
+      {
+        "week": 1,
+        "phase": 1,
+        "days": [
+          {
+            "day": 1,
+            "type": "intervals",
+            "label": "Intervals",
+            "color": "red",
+            "icon": "⚡",
+            "description": "Track intervals with full recovery",
+            "sets": 6,
+            "distance": "400m",
+            "rest_seconds": 90,
+            "estimated_distance_km": 4.5,
+            "instructions": [
+              "Warm up 10 min easy jog",
+              "6 × 400m at hard effort",
+              "90 seconds rest between each",
+              "Cool down 10 min easy jog"
+            ],
+            "timer_type": "interval",
+            "work_seconds": 120,
+            "rest_seconds_timer": 90,
+            "repeats": 6
+          },
+          {
+            "day": 2,
+            "type": "easy",
+            "label": "Easy Run + Strides",
+            "color": "green",
+            "icon": "🏃",
+            "description": "Comfortable aerobic pace with finishing strides",
+            "estimated_distance_km": 6,
+            "instructions": [
+              "30 minutes at easy conversational pace",
+              "Then 6 × 20 second strides",
+              "Walk 60 seconds between strides",
+              "Strides = fast but relaxed, not sprinting"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 1800,
+            "stride_count": 6,
+            "stride_seconds": 20,
+            "stride_rest_seconds": 60
+          },
+          {
+            "day": 3,
+            "type": "tempo",
+            "label": "Tempo Run",
+            "color": "orange",
+            "icon": "🔥",
+            "description": "Comfortably hard sustained effort",
+            "estimated_distance_km": 5.5,
+            "instructions": [
+              "Warm up 10 min easy",
+              "15 minutes at tempo pace (comfortably hard, 7/10 effort)",
+              "Cool down 5 min easy"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 900
+          },
+          {
+            "day": 4,
+            "type": "long",
+            "label": "Long Run",
+            "color": "blue",
+            "icon": "🗺️",
+            "description": "Easy aerobic base building",
+            "estimated_distance_km": 8,
+            "instructions": [
+              "40–50 minutes at easy comfortable pace",
+              "Should feel very relaxed and conversational",
+              "Focus on time on feet, not pace"
+            ],
+            "timer_type": "stopwatch"
+          }
+        ]
+      },
+      {
+        "week": 2,
+        "phase": 1,
+        "days": [
+          {
+            "day": 1,
+            "type": "intervals",
+            "label": "Intervals",
+            "color": "red",
+            "icon": "⚡",
+            "description": "Track intervals with full recovery",
+            "sets": 6,
+            "distance": "400m",
+            "rest_seconds": 90,
+            "estimated_distance_km": 4.5,
+            "instructions": [
+              "Warm up 10 min easy jog",
+              "6 × 400m at hard effort",
+              "90 seconds rest between each",
+              "Cool down 10 min easy jog"
+            ],
+            "timer_type": "interval",
+            "work_seconds": 120,
+            "rest_seconds_timer": 90,
+            "repeats": 6
+          },
+          {
+            "day": 2,
+            "type": "easy",
+            "label": "Easy Run + Strides",
+            "color": "green",
+            "icon": "🏃",
+            "description": "Comfortable aerobic pace with finishing strides",
+            "estimated_distance_km": 6,
+            "instructions": [
+              "30 minutes at easy conversational pace",
+              "Then 6 × 20 second strides",
+              "Walk 60 seconds between strides",
+              "Strides = fast but relaxed, not sprinting"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 1800,
+            "stride_count": 6,
+            "stride_seconds": 20,
+            "stride_rest_seconds": 60
+          },
+          {
+            "day": 3,
+            "type": "tempo",
+            "label": "Tempo Run",
+            "color": "orange",
+            "icon": "🔥",
+            "description": "Comfortably hard sustained effort",
+            "estimated_distance_km": 5.5,
+            "instructions": [
+              "Warm up 10 min easy",
+              "15 minutes at tempo pace (comfortably hard, 7/10 effort)",
+              "Cool down 5 min easy"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 900
+          },
+          {
+            "day": 4,
+            "type": "long",
+            "label": "Long Run",
+            "color": "blue",
+            "icon": "🗺️",
+            "description": "Easy aerobic base building",
+            "estimated_distance_km": 8,
+            "instructions": [
+              "40–50 minutes at easy comfortable pace",
+              "Should feel very relaxed and conversational",
+              "Focus on time on feet, not pace"
+            ],
+            "timer_type": "stopwatch"
+          }
+        ]
+      },
+      {
+        "week": 3,
+        "phase": 1,
+        "days": [
+          {
+            "day": 1,
+            "type": "intervals",
+            "label": "Intervals",
+            "color": "red",
+            "icon": "⚡",
+            "description": "Track intervals — volume increases",
+            "sets": 8,
+            "distance": "400m",
+            "rest_seconds": 90,
+            "estimated_distance_km": 5.5,
+            "instructions": [
+              "Warm up 10 min easy jog",
+              "8 × 400m at hard effort (or 5 × 600m)",
+              "90 seconds rest between each",
+              "Cool down 10 min easy jog"
+            ],
+            "timer_type": "interval",
+            "work_seconds": 120,
+            "rest_seconds_timer": 90,
+            "repeats": 8
+          },
+          {
+            "day": 2,
+            "type": "easy",
+            "label": "Easy Run + Strides",
+            "color": "green",
+            "icon": "🏃",
+            "description": "Comfortable aerobic pace with finishing strides",
+            "estimated_distance_km": 6,
+            "instructions": [
+              "30 minutes at easy conversational pace",
+              "Then 6 × 20 second strides",
+              "Walk 60 seconds between strides",
+              "Strides = fast but relaxed, not sprinting"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 1800,
+            "stride_count": 6,
+            "stride_seconds": 20,
+            "stride_rest_seconds": 60
+          },
+          {
+            "day": 3,
+            "type": "tempo",
+            "label": "Tempo Run",
+            "color": "orange",
+            "icon": "🔥",
+            "description": "Tempo duration increases this week",
+            "estimated_distance_km": 6.5,
+            "instructions": [
+              "Warm up 10 min easy",
+              "20 minutes at tempo pace (comfortably hard, 7/10 effort)",
+              "Cool down 5 min easy"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 1200
+          },
+          {
+            "day": 4,
+            "type": "long",
+            "label": "Long Run",
+            "color": "blue",
+            "icon": "🗺️",
+            "description": "Easy aerobic base building",
+            "estimated_distance_km": 8,
+            "instructions": [
+              "40–50 minutes at easy comfortable pace",
+              "Should feel very relaxed and conversational",
+              "Focus on time on feet, not pace"
+            ],
+            "timer_type": "stopwatch"
+          }
+        ]
+      },
+      {
+        "week": 4,
+        "phase": 1,
+        "days": [
+          {
+            "day": 1,
+            "type": "intervals",
+            "label": "Intervals",
+            "color": "red",
+            "icon": "⚡",
+            "description": "Track intervals — peak phase 1 volume",
+            "sets": 8,
+            "distance": "400m",
+            "rest_seconds": 90,
+            "estimated_distance_km": 5.5,
+            "instructions": [
+              "Warm up 10 min easy jog",
+              "8 × 400m at hard effort (or 5 × 600m)",
+              "90 seconds rest between each",
+              "Cool down 10 min easy jog"
+            ],
+            "timer_type": "interval",
+            "work_seconds": 120,
+            "rest_seconds_timer": 90,
+            "repeats": 8
+          },
+          {
+            "day": 2,
+            "type": "easy",
+            "label": "Easy Run + Strides",
+            "color": "green",
+            "icon": "🏃",
+            "description": "Comfortable aerobic pace with finishing strides",
+            "estimated_distance_km": 6,
+            "instructions": [
+              "30 minutes at easy conversational pace",
+              "Then 6 × 20 second strides",
+              "Walk 60 seconds between strides",
+              "Strides = fast but relaxed, not sprinting"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 1800,
+            "stride_count": 6,
+            "stride_seconds": 20,
+            "stride_rest_seconds": 60
+          },
+          {
+            "day": 3,
+            "type": "tempo",
+            "label": "Tempo Run",
+            "color": "orange",
+            "icon": "🔥",
+            "description": "Comfortably hard sustained effort",
+            "estimated_distance_km": 6.5,
+            "instructions": [
+              "Warm up 10 min easy",
+              "20 minutes at tempo pace (comfortably hard, 7/10 effort)",
+              "Cool down 5 min easy"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 1200
+          },
+          {
+            "day": 4,
+            "type": "long",
+            "label": "Long Run",
+            "color": "blue",
+            "icon": "🗺️",
+            "description": "Easy aerobic base building",
+            "estimated_distance_km": 8,
+            "instructions": [
+              "40–50 minutes at easy comfortable pace",
+              "Should feel very relaxed and conversational",
+              "Focus on time on feet, not pace"
+            ],
+            "timer_type": "stopwatch"
+          }
+        ]
+      },
+      {
+        "week": 5,
+        "phase": 2,
+        "days": [
+          {
+            "day": 1,
+            "type": "intervals",
+            "label": "Race Pace Intervals",
+            "color": "red",
+            "icon": "⚡",
+            "description": "Longer intervals at race pace",
+            "sets": 4,
+            "distance": "800m",
+            "rest_seconds": 120,
+            "estimated_distance_km": 6,
+            "instructions": [
+              "Warm up 10 min easy jog",
+              "4 × 800m at race pace (or 3 × 1000m)",
+              "2 minutes rest between each",
+              "Cool down 10 min easy jog"
+            ],
+            "timer_type": "interval",
+            "work_seconds": 240,
+            "rest_seconds_timer": 120,
+            "repeats": 4
+          },
+          {
+            "day": 2,
+            "type": "easy",
+            "label": "Easy Run + Strides",
+            "color": "green",
+            "icon": "🏃",
+            "description": "Comfortable aerobic pace with finishing strides",
+            "estimated_distance_km": 6,
+            "instructions": [
+              "30 minutes at easy conversational pace",
+              "Then 6 × 20 second strides",
+              "Walk 60 seconds between strides",
+              "Strides = fast but relaxed, not sprinting"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 1800,
+            "stride_count": 6,
+            "stride_seconds": 20,
+            "stride_rest_seconds": 60
+          },
+          {
+            "day": 3,
+            "type": "tempo",
+            "label": "Tempo + Speed",
+            "color": "orange",
+            "icon": "🔥",
+            "description": "Tempo followed by fast 200s",
+            "estimated_distance_km": 7,
+            "instructions": [
+              "Warm up 10 min easy",
+              "15 minutes at tempo pace",
+              "2 min easy jog recovery",
+              "4 × 200m fast (but controlled)",
+              "90 sec walk/jog between 200s",
+              "Cool down 5 min easy"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 900
+          },
+          {
+            "day": 4,
+            "type": "long",
+            "label": "Long Run",
+            "color": "blue",
+            "icon": "🗺️",
+            "description": "Easy aerobic run — slightly shorter than Phase 1",
+            "estimated_distance_km": 7,
+            "instructions": [
+              "35–45 minutes at easy comfortable pace",
+              "Should feel very relaxed and conversational",
+              "Focus on time on feet, not pace"
+            ],
+            "timer_type": "stopwatch"
+          }
+        ]
+      },
+      {
+        "week": 6,
+        "phase": 2,
+        "days": [
+          {
+            "day": 1,
+            "type": "intervals",
+            "label": "Race Pace Intervals",
+            "color": "red",
+            "icon": "⚡",
+            "description": "Longer intervals at race pace",
+            "sets": 4,
+            "distance": "800m",
+            "rest_seconds": 120,
+            "estimated_distance_km": 6,
+            "instructions": [
+              "Warm up 10 min easy jog",
+              "4 × 800m at race pace (or 3 × 1000m)",
+              "2 minutes rest between each",
+              "Cool down 10 min easy jog"
+            ],
+            "timer_type": "interval",
+            "work_seconds": 240,
+            "rest_seconds_timer": 120,
+            "repeats": 4
+          },
+          {
+            "day": 2,
+            "type": "easy",
+            "label": "Easy Run + Strides",
+            "color": "green",
+            "icon": "🏃",
+            "description": "Comfortable aerobic pace with finishing strides",
+            "estimated_distance_km": 6,
+            "instructions": [
+              "30 minutes at easy conversational pace",
+              "Then 6 × 20 second strides",
+              "Walk 60 seconds between strides",
+              "Strides = fast but relaxed, not sprinting"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 1800,
+            "stride_count": 6,
+            "stride_seconds": 20,
+            "stride_rest_seconds": 60
+          },
+          {
+            "day": 3,
+            "type": "tempo",
+            "label": "Tempo + Speed",
+            "color": "orange",
+            "icon": "🔥",
+            "description": "Tempo followed by fast 200s",
+            "estimated_distance_km": 7,
+            "instructions": [
+              "Warm up 10 min easy",
+              "15 minutes at tempo pace",
+              "2 min easy jog recovery",
+              "4 × 200m fast (but controlled)",
+              "90 sec walk/jog between 200s",
+              "Cool down 5 min easy"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 900
+          },
+          {
+            "day": 4,
+            "type": "long",
+            "label": "Long Run",
+            "color": "blue",
+            "icon": "🗺️",
+            "description": "Easy aerobic run",
+            "estimated_distance_km": 7,
+            "instructions": [
+              "35–45 minutes at easy comfortable pace",
+              "Should feel very relaxed and conversational",
+              "Focus on time on feet, not pace"
+            ],
+            "timer_type": "stopwatch"
+          }
+        ]
+      },
+      {
+        "week": 7,
+        "phase": 2,
+        "days": [
+          {
+            "day": 1,
+            "type": "intervals",
+            "label": "Race Pace Intervals",
+            "color": "red",
+            "icon": "⚡",
+            "description": "Longer intervals at race pace",
+            "sets": 4,
+            "distance": "800m",
+            "rest_seconds": 120,
+            "estimated_distance_km": 6,
+            "instructions": [
+              "Warm up 10 min easy jog",
+              "4 × 800m at race pace (or 3 × 1000m)",
+              "2 minutes rest between each",
+              "Cool down 10 min easy jog"
+            ],
+            "timer_type": "interval",
+            "work_seconds": 240,
+            "rest_seconds_timer": 120,
+            "repeats": 4
+          },
+          {
+            "day": 2,
+            "type": "easy",
+            "label": "Easy Run + Strides",
+            "color": "green",
+            "icon": "🏃",
+            "description": "Comfortable aerobic pace with finishing strides",
+            "estimated_distance_km": 6,
+            "instructions": [
+              "30 minutes at easy conversational pace",
+              "Then 6 × 20 second strides",
+              "Walk 60 seconds between strides",
+              "Strides = fast but relaxed, not sprinting"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 1800,
+            "stride_count": 6,
+            "stride_seconds": 20,
+            "stride_rest_seconds": 60
+          },
+          {
+            "day": 3,
+            "type": "tempo",
+            "label": "Tempo + Speed",
+            "color": "orange",
+            "icon": "🔥",
+            "description": "Tempo followed by fast 200s",
+            "estimated_distance_km": 7,
+            "instructions": [
+              "Warm up 10 min easy",
+              "15 minutes at tempo pace",
+              "2 min easy jog recovery",
+              "4 × 200m fast (but controlled)",
+              "90 sec walk/jog between 200s",
+              "Cool down 5 min easy"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 900
+          },
+          {
+            "day": 4,
+            "type": "long",
+            "label": "Long Run",
+            "color": "blue",
+            "icon": "🗺️",
+            "description": "Easy aerobic run",
+            "estimated_distance_km": 7,
+            "instructions": [
+              "35–45 minutes at easy comfortable pace",
+              "Should feel very relaxed and conversational",
+              "Focus on time on feet, not pace"
+            ],
+            "timer_type": "stopwatch"
+          }
+        ]
+      },
+      {
+        "week": 8,
+        "phase": 3,
+        "phase_label": "Taper",
+        "days": [
+          {
+            "day": 1,
+            "type": "intervals",
+            "label": "Taper Intervals",
+            "color": "red",
+            "icon": "⚡",
+            "description": "Sharp race pace intervals — low volume",
+            "sets": 4,
+            "distance": "400m",
+            "rest_seconds": 90,
+            "estimated_distance_km": 4,
+            "instructions": [
+              "Warm up 10 min easy jog",
+              "4 × 400m at race pace — sharp and fast",
+              "90 seconds rest between each",
+              "Cool down 10 min easy jog"
+            ],
+            "timer_type": "interval",
+            "work_seconds": 120,
+            "rest_seconds_timer": 90,
+            "repeats": 4
+          },
+          {
+            "day": 2,
+            "type": "easy",
+            "label": "Easy + Strides",
+            "color": "green",
+            "icon": "🏃",
+            "description": "Short easy run to stay sharp",
+            "estimated_distance_km": 4,
+            "instructions": [
+              "15 minutes easy jog",
+              "4 × 20 second strides",
+              "Walk 60 seconds between strides",
+              "Stay relaxed — legs should feel fresh"
+            ],
+            "timer_type": "countdown",
+            "work_seconds": 900,
+            "stride_count": 4,
+            "stride_seconds": 20,
+            "stride_rest_seconds": 60
+          },
+          {
+            "day": 3,
+            "type": "race",
+            "label": "2-Mile Time Trial",
+            "color": "red",
+            "icon": "🏁",
+            "description": "Race day — go for it!",
+            "estimated_distance_km": 3.2,
+            "instructions": [
+              "Warm up 15 min easy with a few strides",
+              "RUN 2 MILES AS FAST AS YOU CAN",
+              "Record your time",
+              "Cool down 10 min easy walk/jog"
+            ],
+            "timer_type": "stopwatch"
+          }
+        ]
+      }
+    ]
+  }
+}
