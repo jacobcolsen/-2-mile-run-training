@@ -949,12 +949,16 @@ function openLogModal(workout, weekIndex, dayIndex) {
   pendingLogWorkout = { ...workout, weekIndex, dayIndex };
   selectedRPE = null;
 
-  // Clear form
-  document.getElementById('log-distance').value = '';
-  document.getElementById('log-time').value = '';
-  document.getElementById('log-pace').value = '';
-  document.getElementById('log-notes').value = '';
-  document.querySelectorAll('.rpe-btn').forEach(b => b.classList.remove('selected'));
+  // Pre-fill form with existing entry if editing
+  const existing = getLogEntry(weekIndex, dayIndex);
+  document.getElementById('log-distance').value = existing?.distance ?? '';
+  document.getElementById('log-time').value = existing?.time ?? '';
+  document.getElementById('log-pace').value = existing?.pace ?? '';
+  document.getElementById('log-notes').value = existing?.notes ?? '';
+  selectedRPE = existing?.rpe ?? null;
+  document.querySelectorAll('.rpe-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.rpe) === selectedRPE);
+  });
 
   // Pre-fill timer elapsed if stopwatch was used
   if (timerState.mode === 'stopwatch' && timerState.elapsed > 0) {
