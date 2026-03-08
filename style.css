@@ -52,28 +52,36 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html {
   height: 100%;
+  /* Hard-block any horizontal scroll at the root */
+  overflow-x: hidden;
   overscroll-behavior: none;
 }
 
 body {
+  height: 100%;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  overscroll-behavior: none;
   font-family: var(--font);
   background: var(--bg);
   color: var(--text);
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  overflow: hidden; /* App shell handles scroll */
+  overflow-y: hidden; /* App shell manages per-page scroll */
 }
 
 /* ---- App Shell ---- */
 #app {
   display: flex;
   flex-direction: column;
-  height: 100dvh; /* dynamic viewport height — handles iOS bars */
-  max-width: 480px;
-  margin: 0 auto;
+  height: 100dvh;
+  width: 100%;
+  max-width: 100%;   /* fill viewport, no wider */
+  overflow: hidden;
   position: relative;
 }
 
@@ -104,10 +112,19 @@ body {
 /* ---- Pages ---- */
 .page {
   flex: 1;
+  min-height: 0;          /* required for flex children to scroll */
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding: 20px 20px calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  padding: 20px 16px calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Today and Workouts pages don't need vertical scroll — clip overflow */
+#page-today,
+#page-workouts {
+  overflow-y: auto;   /* allow if content is taller than viewport */
 }
 
 .page.hidden { display: none; }
@@ -473,8 +490,9 @@ body {
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 28px;
+  width: 100%;
 }
 
 .stat-card {
@@ -522,9 +540,13 @@ body {
   padding: 16px;
   position: relative;
   height: 200px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .chart-wrap canvas {
+  max-width: 100%;
   max-height: 100%;
 }
 
@@ -591,11 +613,13 @@ body {
 .modal-sheet {
   background: var(--bg2);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  padding: 12px 24px calc(var(--safe-bottom) + 24px);
+  padding: 12px 16px calc(var(--safe-bottom) + 24px);
   width: 100%;
-  max-width: 480px;
+  max-width: 100%;
+  box-sizing: border-box;
   max-height: 92dvh;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -675,14 +699,15 @@ body {
 /* RPE Picker */
 #rpe-picker {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 4px;
+  flex-wrap: nowrap;
+  width: 100%;
 }
 
 .rpe-btn {
   flex: 1;
-  min-width: 40px;
-  height: 48px;
+  min-width: 0;
+  height: 44px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -703,21 +728,24 @@ body {
 /* Day picker */
 .day-picker {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+  width: 100%;
 }
 
 .day-btn {
   flex: 1;
-  height: 48px;
+  min-width: 0;        /* allow shrinking below content size */
+  height: 44px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   font-family: var(--font);
   cursor: pointer;
   transition: all 0.15s;
+  padding: 0;
 }
 
 .day-btn.active {
@@ -729,24 +757,30 @@ body {
 /* Segmented picker (audio mode) */
 .segment-picker {
   display: flex;
+  width: 100%;
   background: var(--surface);
   border-radius: var(--radius-sm);
   padding: 4px;
   gap: 4px;
+  box-sizing: border-box;
 }
 
 .segment-btn {
   flex: 1;
-  padding: 10px 8px;
+  min-width: 0;
+  padding: 10px 4px;
   border: none;
   border-radius: 8px;
   background: transparent;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   font-family: var(--font);
   cursor: pointer;
   transition: all 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .segment-btn.active {
@@ -786,18 +820,21 @@ body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
+  max-width: 100%;
+  box-sizing: border-box;
   height: 100%;
   padding: var(--safe-top) 0 var(--safe-bottom);
+  overflow: hidden;
 }
 
 #timer-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 20px;
+  padding: 16px 16px;
   flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 #timer-workout-label {
@@ -811,10 +848,13 @@ body {
 #gps-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 20px 12px;
+  gap: 10px;
+  padding: 0 16px 12px;
   flex-shrink: 0;
   flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .gps-btn {
@@ -866,12 +906,16 @@ body {
 /* ---- Unified Timer Body ---- */
 #timer-body {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 32px;
+  padding: 0 20px;
   gap: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* Phase label — color changes by workout phase */
@@ -906,17 +950,19 @@ body {
   min-height: 18px;
 }
 
-/* The big countdown number */
+/* The big countdown number — fluid size so it never overflows */
 #timer-main-display {
-  font-size: 88px;
+  font-size: clamp(60px, 20vw, 88px);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -3px;
+  letter-spacing: -2px;
   color: var(--text);
   line-height: 1;
   margin: 8px 0;
   font-family: var(--mono);
   transition: color 0.3s;
+  max-width: 100%;
+  text-align: center;
 }
 
 /* Rep counter */
