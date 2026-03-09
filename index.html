@@ -60,6 +60,8 @@
           <span id="today-day-label">Day 1</span>
         </div>
 
+        <div id="run-section-label" class="day-section-label hidden">🏃 RUN</div>
+
         <div id="workout-header">
           <span id="workout-icon">⚡</span>
           <h1 id="workout-title">Intervals</h1>
@@ -116,6 +118,22 @@
           <div class="stat-value" id="stat-completion">0%</div>
           <div class="stat-label">Complete</div>
         </div>
+      </div>
+
+      <div id="pt-stats" class="stats-grid pt-stats-row">
+        <div class="stat-card stat-card-pt">
+          <div class="stat-value" id="stat-pt-done">0</div>
+          <div class="stat-label">PT Sessions</div>
+        </div>
+        <div class="stat-card stat-card-pt">
+          <div class="stat-value" id="stat-pt-pct">0%</div>
+          <div class="stat-label">PT Complete</div>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <h3>💪 PT Progress</h3>
+        <div id="pt-week-grid"></div>
       </div>
 
       <div class="chart-section">
@@ -316,13 +334,34 @@
           <p id="detail-meta"></p>
         </div>
       </div>
-      <ul id="detail-instructions"></ul>
-      <div id="detail-logged-info" class="hidden">
-        <h3>Your Log</h3>
-        <div id="detail-log-data"></div>
+
+      <!-- Tab bar — hidden when no PT workout -->
+      <div id="detail-tabs" class="hidden">
+        <button class="detail-tab active" data-tab="run">🏃 Run</button>
+        <button class="detail-tab" data-tab="strength">💪 Strength</button>
       </div>
-      <button id="detail-start-btn" class="btn btn-primary btn-large">▶ Start Workout</button>
-      <button id="detail-log-btn" class="btn btn-secondary">Log Workout</button>
+
+      <!-- Run tab pane -->
+      <div id="detail-tab-run" class="detail-tab-pane">
+        <ul id="detail-instructions"></ul>
+        <div id="detail-logged-info" class="hidden">
+          <h3>Your Log</h3>
+          <div id="detail-log-data"></div>
+        </div>
+        <button id="detail-start-btn" class="btn btn-primary btn-large">▶ Start Workout</button>
+        <button id="detail-log-btn" class="btn btn-secondary">Log Workout</button>
+      </div>
+
+      <!-- Strength tab pane -->
+      <div id="detail-tab-strength" class="detail-tab-pane hidden">
+        <ul id="detail-pt-instructions" class="pt-instructions-list detail-pt-list"></ul>
+        <div id="detail-pt-logged-info" class="hidden">
+          <div class="detail-pt-done-row">✓ PT Complete</div>
+        </div>
+        <button id="detail-start-pt-btn" class="btn btn-pt btn-large">▶ Start PT</button>
+        <button id="detail-mark-pt-btn" class="btn btn-secondary">Mark Done</button>
+      </div>
+
       <button id="detail-close-btn" class="btn btn-ghost">Close</button>
     </div>
   </div>

@@ -320,11 +320,11 @@ function todayISO() {
   return isoDate(new Date());
 }
 
-// Check if a workout (by weekIndex + dayIndex) has been logged
+// Check if the RUN portion of a workout has been logged
 function isLogged(weekIndex, dayIndex) {
-  return progress.workouts.some(
-    w => w.weekIndex === weekIndex && w.dayIndex === dayIndex
-  );
+  const entry = getLogEntry(weekIndex, dayIndex);
+  // PT-only entries have type 'strength' — don't count as run logged
+  return entry != null && entry.type !== 'strength';
 }
 
 function getLogEntry(weekIndex, dayIndex) {
@@ -430,6 +430,10 @@ function renderWorkoutCard(weekIndex, dayIndex, scheduleEntry) {
     startBtn.textContent = 'Start Workout';
   }
 
+  // Show RUN section label only when there's also a PT workout that day
+  const runLabel = document.getElementById('run-section-label');
+  if (runLabel) runLabel.classList.toggle('hidden', !workout.strength);
+
   // Wire up buttons for this workout
   startBtn.onclick = () => openTimerModal(workout, weekIndex, dayIndex);
   logManualBtn.onclick = () => openLogModal(workout, weekIndex, dayIndex);
@@ -439,7 +443,6 @@ function renderWorkoutCard(weekIndex, dayIndex, scheduleEntry) {
 }
 
 function renderPTSection(weekIndex, dayIndex) {
-  // Remove any existing PT section in today-card
   const existing = document.getElementById('today-pt-section');
   if (existing) existing.remove();
 
@@ -452,10 +455,10 @@ function renderPTSection(weekIndex, dayIndex) {
   section.id = 'today-pt-section';
   section.className = 'pt-section';
   section.innerHTML = `
-    <div class="pt-divider"></div>
+    <div class="day-section-label">💪 STRENGTH</div>
     <div class="pt-header">
       <span class="pt-icon">${strength.icon}</span>
-      <div>
+      <div style="flex:1;min-width:0;">
         <div class="pt-title">${strength.label}</div>
         <div class="pt-desc">${strength.description}</div>
       </div>
@@ -466,12 +469,11 @@ function renderPTSection(weekIndex, dayIndex) {
     </ul>
     <div class="pt-btn-row">
       <button class="btn btn-pt" id="start-pt-btn">▶ Start PT</button>
-      <button class="btn btn-secondary btn-sm" id="mark-pt-btn">${ptDone ? '✓ PT Done' : 'Mark Done'}</button>
+      <button class="btn btn-secondary btn-sm" id="mark-pt-btn">${ptDone ? '✓ Done' : 'Mark Done'}</button>
     </div>
   `;
 
   document.getElementById('today-card').appendChild(section);
-
   document.getElementById('start-pt-btn').onclick = () => openPTTimerModal(weekIndex, dayIndex);
   document.getElementById('mark-pt-btn').onclick = () => markPTDone(weekIndex, dayIndex);
 }
@@ -492,10 +494,10 @@ function renderWorkoutsPage() {
     const section = document.createElement('div');
     section.className = 'week-section';
 
-    const completedInWeek = week.days.filter((_, dIdx) =>
-      isLogged(wIdx, dIdx)
-    ).length;
+    const completedInWeek = week.days.filter((_, dIdx) => isLogged(wIdx, dIdx)).length;
     const totalInWeek = week.days.length;
+    const ptDoneInWeek = week.days.filter((_, dIdx) => isPTDone(wIdx, dIdx)).length;
+    const totalPTInWeek = week.days.filter(d => d.strength).length;
 
     const phaseLabel = week.phase === 3 ? 'Taper' : `Phase ${week.phase}`;
 
@@ -506,7 +508,7 @@ function renderWorkoutsPage() {
         <span class="week-num">WEEK ${week.week}</span>
         <span class="week-phase-badge">${phaseLabel}</span>
       </span>
-      <span class="week-completion">${completedInWeek}/${totalInWeek} done</span>
+      <span class="week-completion">${completedInWeek}/${totalInWeek} run · ${ptDoneInWeek}/${totalPTInWeek} PT</span>
       <span class="week-chevron">›</span>
     `;
 
@@ -519,6 +521,9 @@ function renderWorkoutsPage() {
         todayEntry.dayIndex === dIdx;
       const logged = isLogged(wIdx, dIdx);
 
+      const ptLogged = isPTDone(wIdx, dIdx);
+      const strength = workout.strength;
+
       const row = document.createElement('div');
       row.className = 'workout-row';
       row.innerHTML = `
@@ -526,9 +531,15 @@ function renderWorkoutsPage() {
         <div class="workout-row-info">
           <div class="workout-row-label">${workout.label}</div>
           <div class="workout-row-sub">Day ${dIdx + 1} · ~${workout.estimated_distance_km} km</div>
+          ${strength ? `<div class="workout-row-pt-tag">${strength.icon} ${strength.label}</div>` : ''}
         </div>
-        ${isToday ? '<span class="workout-row-today">TODAY</span>' : ''}
-        ${logged ? '<span class="workout-row-check">✓</span>' : ''}
+        <div class="workout-row-status">
+          ${isToday ? '<span class="workout-row-today">TODAY</span>' : ''}
+          <div class="row-done-flags">
+            <span class="row-flag ${logged ? 'flag-run-done' : ''}" title="Run">🏃</span>
+            ${strength ? `<span class="row-flag ${ptLogged ? 'flag-pt-done' : ''}" title="Strength">💪</span>` : ''}
+          </div>
+        </div>
       `;
       row.addEventListener('click', () => openDetailModal(wIdx, dIdx));
       body.appendChild(row);
@@ -557,9 +568,9 @@ function renderWorkoutsPage() {
 // ============================================================
 
 function renderProgressPage() {
-  // Stats
+  // Run stats — only count entries with actual run data
   const total = getTotalWorkouts();
-  const done = progress.workouts.length;
+  const done = WORKOUTS.reduce((s, w, wi) => s + w.days.filter((_, di) => isLogged(wi, di)).length, 0);
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   const totalKm = progress.workouts.reduce((s, w) => s + (w.distance || 0), 0);
 
@@ -568,6 +579,16 @@ function renderProgressPage() {
   document.getElementById('stat-mileage').textContent = totalKm.toFixed(1);
   document.getElementById('stat-completion').textContent = `${pct}%`;
 
+  // PT stats
+  const totalPT = WORKOUTS.reduce((s, w) => s + w.days.filter(d => d.strength).length, 0);
+  const ptDone = progress.workouts.filter(w => w.pt_done).length;
+  const ptPct = totalPT > 0 ? Math.round((ptDone / totalPT) * 100) : 0;
+  document.getElementById('stat-pt-done').textContent = ptDone;
+  document.getElementById('stat-pt-pct').textContent = `${ptPct}%`;
+
+  // PT week grid
+  renderPTWeekGrid();
+
   // Charts
   renderMileageChart();
   renderTimeChart();
@@ -575,6 +596,31 @@ function renderProgressPage() {
 
   // Log list
   renderLogList();
+}
+
+function renderPTWeekGrid() {
+  const container = document.getElementById('pt-week-grid');
+  container.innerHTML = '';
+  WORKOUTS.forEach((week, wIdx) => {
+    const ptDays = week.days.filter(d => d.strength);
+    if (ptDays.length === 0) return;
+
+    const row = document.createElement('div');
+    row.className = 'pt-week-row';
+    row.innerHTML = `<span class="pt-week-row-label">Wk ${week.week}</span>`;
+
+    const dots = document.createElement('div');
+    dots.className = 'pt-week-dots';
+    week.days.forEach((day, dIdx) => {
+      if (!day.strength) return;
+      const dot = document.createElement('div');
+      dot.className = `pt-dot ${isPTDone(wIdx, dIdx) ? 'done' : ''}`;
+      dot.title = day.strength.label;
+      dots.appendChild(dot);
+    });
+    row.appendChild(dots);
+    container.appendChild(row);
+  });
 }
 
 function calcWeekStreak() {
@@ -1688,51 +1734,50 @@ function openDetailModal(weekIndex, dayIndex) {
   // Store context for the Start and Log button handlers
   detailContext = { weekIndex, dayIndex };
 
-  // Update button labels
+  // Update run tab button labels
   document.getElementById('detail-log-btn').textContent = entry ? 'Edit Log' : 'Log Workout';
 
-  document.getElementById('detail-modal').classList.remove('hidden');
-
-  // PT section in detail modal
-  const existingPT = document.getElementById('detail-pt-section');
-  if (existingPT) existingPT.remove();
+  // --- PT Tab ---
   const strength = WORKOUTS[weekIndex]?.days[dayIndex]?.strength;
+  const tabs = document.getElementById('detail-tabs');
+  const ptPane = document.getElementById('detail-tab-strength');
+  const runPane = document.getElementById('detail-tab-run');
+
+  // Reset to run tab
+  document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.detail-tab[data-tab="run"]').classList.add('active');
+  runPane.classList.remove('hidden');
+  ptPane.classList.add('hidden');
+
   if (strength) {
+    tabs.classList.remove('hidden');
+
+    // Populate PT instructions
+    const ptList = document.getElementById('detail-pt-instructions');
+    ptList.innerHTML = strength.instructions.map(s => `<li>${s}</li>`).join('');
+
+    // PT completion status
     const ptDone = isPTDone(weekIndex, dayIndex);
-    const ptSection = document.createElement('div');
-    ptSection.id = 'detail-pt-section';
-    ptSection.className = 'pt-section';
-    ptSection.innerHTML = `
-      <div class="pt-divider"></div>
-      <div class="pt-header">
-        <span class="pt-icon">${strength.icon}</span>
-        <div>
-          <div class="pt-title">${strength.label}</div>
-          <div class="pt-desc">${strength.description}</div>
-        </div>
-        ${ptDone ? '<span class="pt-done-badge">✓ Done</span>' : ''}
-      </div>
-      <ul class="pt-instructions-list">
-        ${strength.instructions.map(s => `<li>${s}</li>`).join('')}
-      </ul>
-      <div class="pt-btn-row">
-        <button class="btn btn-pt" id="detail-start-pt-btn">▶ Start PT</button>
-        <button class="btn btn-secondary btn-sm" id="detail-mark-pt-btn">${ptDone ? '✓ PT Done' : 'Mark Done'}</button>
-      </div>
-    `;
-    document.querySelector('#detail-modal .modal-sheet').insertBefore(
-      ptSection,
-      document.getElementById('detail-start-btn')
-    );
+    document.getElementById('detail-pt-logged-info').classList.toggle('hidden', !ptDone);
+    document.getElementById('detail-mark-pt-btn').textContent = ptDone ? '✓ Done' : 'Mark Done';
+
+    // Wire PT buttons
     document.getElementById('detail-start-pt-btn').onclick = () => {
       document.getElementById('detail-modal').classList.add('hidden');
       openPTTimerModal(weekIndex, dayIndex);
     };
     document.getElementById('detail-mark-pt-btn').onclick = () => {
       markPTDone(weekIndex, dayIndex);
-      document.getElementById('detail-modal').classList.add('hidden');
+      // Refresh done state in modal
+      const nowDone = isPTDone(weekIndex, dayIndex);
+      document.getElementById('detail-pt-logged-info').classList.toggle('hidden', !nowDone);
+      document.getElementById('detail-mark-pt-btn').textContent = nowDone ? '✓ Done' : 'Mark Done';
     };
+  } else {
+    tabs.classList.add('hidden');
   }
+
+  document.getElementById('detail-modal').classList.remove('hidden');
 }
 
 // ============================================================
@@ -2014,6 +2059,16 @@ function bindEvents() {
       selectedRPE = parseInt(btn.dataset.rpe);
       document.querySelectorAll('.rpe-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
+    });
+  });
+
+  // Detail modal — tab switching
+  document.querySelectorAll('.detail-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.detail-tab-pane').forEach(p => p.classList.add('hidden'));
+      tab.classList.add('active');
+      document.getElementById(`detail-tab-${tab.dataset.tab}`).classList.remove('hidden');
     });
   });
 
