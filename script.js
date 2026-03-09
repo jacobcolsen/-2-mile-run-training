@@ -58,7 +58,8 @@ const gpsState = {
   lastLat: null,
   lastLon: null,
   error: null,
-  startTime: null,   // Date.now() when GPS started — used for pace calculation
+  startTime: null,        // Date.now() when GPS started — used for pace calculation
+  intervalDistanceKm: 0,  // Distance for current interval rep only — resets each work sub-phase
 };
 
 // Current log context
@@ -773,6 +774,15 @@ function announceMilestone(elapsed) {
 
 // Returns an ordered array of phase objects for a given workout.
 // Phases auto-advance in sequence — warmup → main set → cooldown etc.
+// Parse "400m" → 0.4, "800m" → 0.8, "1km" → 1.0 etc.
+function parseDistanceKm(str) {
+  if (!str) return null;
+  const m = str.match(/^(\d+(?:\.\d+)?)\s*(m|km)$/i);
+  if (!m) return null;
+  const val = parseFloat(m[1]);
+  return m[2].toLowerCase() === 'km' ? val : val / 1000;
+}
+
 function buildWorkoutPhases(workout) {
   const phases = [];
 
@@ -787,13 +797,17 @@ function buildWorkoutPhases(workout) {
         seconds: 600,
         voiceStart: 'Starting warm up. Easy jog for 10 minutes.',
       });
+      const targetDistanceKm = parseDistanceKm(dist);
       phases.push({
         kind: 'intervals', label: 'Intervals', color: 'red',
         reps, workSeconds: workout.work_seconds, restSeconds: rest,
+        targetDistanceKm,  // null if no distance string — falls back to time
+        distanceLabel: dist,
         voiceStart: `Warm up complete. ${reps} intervals of ${dist}. Let's go.`,
         voiceRepStart:  (r, t) => `Rep ${r} of ${t}. Go!`,
-        voiceRestStart: (r, t) => `Rep ${r} done. Rest.`,
+        voiceRestStart: (r, t) => `Rep ${r} done. Rest. 90 seconds.`,
         voiceComplete: 'Intervals complete! Great work.',
+        voiceDistanceHit: (r, t) => `${dist} done! Rest now.`,
       });
       phases.push({
         kind: 'countdown', label: 'Cool Down', color: 'green',
@@ -908,6 +922,7 @@ function openTimerModal(workout, weekIndex, dayIndex) {
   gpsState.distanceKm = 0;
   gpsState.lastLat = null;
   gpsState.lastLon = null;
+  gpsState.intervalDistanceKm = 0;
   document.getElementById('gps-km').textContent = '0.00';
   document.getElementById('gps-status').textContent = '';
   document.getElementById('gps-distance-display').classList.add('hidden');
@@ -942,6 +957,8 @@ function initPhase(index) {
     timerState.remaining = phase.workSeconds;
     timerState.totalSeconds = phase.workSeconds;
     timerState.elapsed = 0;
+    // Reset per-rep GPS distance at start of interval phase
+    gpsState.intervalDistanceKm = 0;
   } else {
     // stopwatch
     timerState.elapsed = 0;
@@ -996,6 +1013,30 @@ function timerTick() {
   }
 
   // --- Intervals or Strides ---
+
+  // For GPS-distance-based interval WORK sub-phases:
+  // The work phase is driven by distance, not time. We still tick a backup
+  // countdown (remaining) for fallback if GPS isn't locked, but the primary
+  // trigger is gpsState.intervalDistanceKm reaching phase.targetDistanceKm.
+  const isGPSIntervalWork =
+    phase.kind === 'intervals' &&
+    phase.targetDistanceKm &&
+    timerState.subPhase === 'work' &&
+    gpsState.active;
+
+  if (isGPSIntervalWork) {
+    // Check if target distance was reached (checked here + in onGPSPosition)
+    if (gpsState.intervalDistanceKm >= phase.targetDistanceKm) {
+      completeIntervalWorkPhase(phase);
+      return;
+    }
+    // Still running — tick backup timer but don't auto-advance by time alone
+    if (timerState.remaining > 0) timerState.remaining--;
+    updateTimerDisplay();
+    return;
+  }
+
+  // Normal time-based tick
   if (timerState.remaining > 0) {
     timerState.remaining--;
     updateTimerDisplay();
@@ -1005,52 +1046,78 @@ function timerTick() {
 
   // Phase boundary within rep set
   if (timerState.subPhase === 'work') {
-    if (timerState.repCurrent >= timerState.repTotal) {
-      // All reps done — go to next workout phase
-      if (phase.voiceComplete) setTimeout(() => speak(phase.voiceComplete), 100);
-      vibrate([200, 100, 200, 100, 200]);
-      playBeep('end');   // Distinct "done" tone
-      advancePhase();
-    } else {
-      // Switch to rest
-      timerState.subPhase = 'rest';
-      timerState.remaining = timerState.restSeconds;
-      timerState.totalSeconds = timerState.restSeconds;
-      const msg = phase.voiceRestStart
+    completeIntervalWorkPhase(phase);
+  } else {
+    completeIntervalRestPhase(phase);
+  }
+}
+
+function completeIntervalWorkPhase(phase) {
+  if (timerState.repCurrent >= timerState.repTotal) {
+    // All reps done — go to next workout phase
+    if (phase.voiceComplete) setTimeout(() => speak(phase.voiceComplete), 100);
+    vibrate([200, 100, 200, 100, 200]);
+    playBeep('end');
+    advancePhase();
+  } else {
+    // Switch to rest
+    timerState.subPhase = 'rest';
+    timerState.remaining = timerState.restSeconds;
+    timerState.totalSeconds = timerState.restSeconds;
+    const msg = phase.voiceDistanceHit
+      ? phase.voiceDistanceHit(timerState.repCurrent, timerState.repTotal)
+      : phase.voiceRestStart
         ? phase.voiceRestStart(timerState.repCurrent, timerState.repTotal)
         : `Rep ${timerState.repCurrent} done. Rest.`;
-      setTimeout(() => speak(msg), 100);
-      vibrate([150, 80, 150]);
-      playBeep('low');   // Low tone = rest
-      updateTimerDisplay();
-    }
-  } else {
-    // Rest done — start next rep
-    timerState.repCurrent++;
-    timerState.subPhase = 'work';
-    timerState.remaining = timerState.workSeconds;
-    timerState.totalSeconds = timerState.workSeconds;
-    const msg = phase.voiceRepStart
-      ? phase.voiceRepStart(timerState.repCurrent, timerState.repTotal)
-      : `Rep ${timerState.repCurrent}. Go!`;
     setTimeout(() => speak(msg), 100);
-    vibrate([200, 100, 200]);
-    playBeep('high');   // High tone = go
+    vibrate([150, 80, 150]);
+    playBeep('low');
     updateTimerDisplay();
   }
+}
+
+function completeIntervalRestPhase(phase) {
+  // Rest done — start next rep, reset interval distance
+  timerState.repCurrent++;
+  timerState.subPhase = 'work';
+  timerState.remaining = timerState.workSeconds;
+  timerState.totalSeconds = timerState.workSeconds;
+  gpsState.intervalDistanceKm = 0;  // Fresh distance counter for new rep
+  const msg = phase.voiceRepStart
+    ? phase.voiceRepStart(timerState.repCurrent, timerState.repTotal)
+    : `Rep ${timerState.repCurrent}. Go!`;
+  setTimeout(() => speak(msg), 100);
+  vibrate([200, 100, 200]);
+  playBeep('high');
+  updateTimerDisplay();
 }
 
 function updateTimerDisplay() {
   const phase = timerState.phases[timerState.phaseIndex];
 
-  // Phase label — shows 'Rest' during rest sub-phases
+  // Phase label — shows 'Rest' during rest sub-phases, target distance during GPS work
   const isRest = (phase.kind === 'intervals' || phase.kind === 'strides') && timerState.subPhase === 'rest';
-  document.getElementById('timer-phase-label').textContent = isRest ? 'Rest' : phase.label;
-  document.getElementById('timer-phase-sub').textContent = phase.phaseLabel || '';
+  let phaseLabel = isRest ? 'Rest' : phase.label;
+  if (isGPSIntervalWork && phase.distanceLabel) phaseLabel = `Run ${phase.distanceLabel}`;
+  document.getElementById('timer-phase-label').textContent = phaseLabel;
+
+  // Sub-label: show target distance during GPS work, or phase position
+  let phaseSub = phase.phaseLabel || '';
+  if (isGPSIntervalWork && phase.targetDistanceKm) {
+    phaseSub = `Target: ${phase.distanceLabel}`;
+  }
+  document.getElementById('timer-phase-sub').textContent = phaseSub;
 
   // Main display
+  const isGPSIntervalWork = phase.kind === 'intervals' &&
+    phase.targetDistanceKm && timerState.subPhase === 'work' && gpsState.active;
+
   if (phase.kind === 'stopwatch') {
     document.getElementById('timer-main-display').textContent = formatDuration(timerState.elapsed);
+  } else if (isGPSIntervalWork) {
+    // Show distance progress: "0.24 km"
+    document.getElementById('timer-main-display').textContent =
+      `${gpsState.intervalDistanceKm.toFixed(2)} km`;
   } else {
     document.getElementById('timer-main-display').textContent = formatTime(timerState.remaining);
   }
@@ -1067,7 +1134,12 @@ function updateTimerDisplay() {
 
   // Progress bar
   const wrap = document.getElementById('timer-progress-wrap');
-  if (phase.kind !== 'stopwatch' && timerState.totalSeconds > 0) {
+  if (isGPSIntervalWork) {
+    // Fill bar by distance covered toward target
+    wrap.classList.remove('hidden');
+    const pct = Math.min((gpsState.intervalDistanceKm / phase.targetDistanceKm) * 100, 100);
+    document.getElementById('timer-progress-bar').style.width = `${pct}%`;
+  } else if (phase.kind !== 'stopwatch' && timerState.totalSeconds > 0) {
     wrap.classList.remove('hidden');
     const pct = (timerState.remaining / timerState.totalSeconds) * 100;
     document.getElementById('timer-progress-bar').style.width = `${pct}%`;
@@ -1463,6 +1535,19 @@ function onGPSPosition(pos) {
     if (d >= 0.002 && d <= 0.05) {
       gpsState.distanceKm += d;
       updateGPSDisplay();
+
+      // Accumulate per-rep distance during interval work sub-phases
+      if (timerState.running) {
+        const phase = timerState.phases[timerState.phaseIndex];
+        if (phase?.kind === 'intervals' && phase.targetDistanceKm && timerState.subPhase === 'work') {
+          gpsState.intervalDistanceKm += d;
+          updateTimerDisplay();
+          // Check if target reached — trigger rest immediately
+          if (gpsState.intervalDistanceKm >= phase.targetDistanceKm) {
+            completeIntervalWorkPhase(phase);
+          }
+        }
+      }
     }
   }
 
