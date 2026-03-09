@@ -1391,48 +1391,61 @@ body {
 
 .pt-instructions-list {
   list-style: none;
-  padding: 0;
+  padding: 20px;
   margin: 0 0 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 14px;
+}
+
+/* In the detail modal the sheet already provides a bg — remove double bg */
+.detail-pt-list {
+  background: none;
+  padding: 0 0 8px;
+  gap: 14px;
 }
 
 .pt-instructions-list li {
-  font-size: 14px;
-  color: var(--text-muted);
-  padding-left: 16px;
-  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--text);
 }
 
 .pt-instructions-list li::before {
-  content: '·';
-  position: absolute;
-  left: 4px;
-  color: var(--purple);
+  content: '→';
+  color: var(--text-dim);
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .pt-btn-row {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-items: center;
 }
 
 .btn-pt {
-  background: var(--purple-bg);
-  color: var(--purple);
-  border: 1px solid var(--purple);
+  background: var(--accent);
+  color: #fff;
+  border: none;
   border-radius: var(--radius);
-  padding: 12px 20px;
-  font-size: 15px;
+  padding: 20px 24px;
+  font-size: 18px;
   font-weight: 700;
   font-family: var(--font);
   cursor: pointer;
   flex: 1;
+  width: 100%;
+  text-align: center;
 }
 
 .btn-pt:active {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .btn-sm {

@@ -469,7 +469,7 @@ function renderPTSection(weekIndex, dayIndex) {
     </ul>
     <div class="pt-btn-row">
       <button class="btn btn-pt" id="start-pt-btn">▶ Start PT</button>
-      <button class="btn btn-secondary btn-sm" id="mark-pt-btn">${ptDone ? '✓ Done' : 'Mark Done'}</button>
+      <button class="btn btn-secondary" id="mark-pt-btn">${ptDone ? '✓ Done' : 'Mark Done'}</button>
     </div>
   `;
 
