@@ -227,7 +227,10 @@ function getTotalWorkouts() {
 }
 
 function isoDate(d) {
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function addDays(date, n) {
@@ -291,10 +294,11 @@ function renderTodayPage() {
     return;
   }
 
-  // Is today a workout day?
+  // Is today a workout day? Check both schedule and day-of-week guard.
+  const todayDOW = today.getDay();
   const todayEntry = schedule.find(s => s.date === isoDate(today));
 
-  if (!todayEntry) {
+  if (!todayEntry || !progress.workoutDays.includes(todayDOW)) {
     // Rest day — find next workout
     restDay.classList.remove('hidden');
     const upcoming = schedule.find(s => new Date(s.date + 'T00:00:00') > todayNorm);
@@ -1104,6 +1108,11 @@ function startTimer() {
   if (timerState.running) return;
   initSpeech(); // Unlock iOS speech synthesis on user gesture
   initBeeps();  // Pre-generate WAV blobs so first beep isn't delayed
+
+  // Auto-start GPS tracking on first press
+  if (!gpsState.active) {
+    startGPS();
+  }
 
   // Announce current phase on first press
   const phase = timerState.phases[timerState.phaseIndex];
