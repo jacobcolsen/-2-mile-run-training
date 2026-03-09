@@ -1674,7 +1674,82 @@ function getPTAdjSpecs(strength) {
   return specs;
 }
 
-function renderAdjPanel(containerId, specs, customKey) {
+function generateRunInstructions(workout) {
+  switch (workout.type) {
+    case 'intervals': {
+      const rest = workout.rest_seconds_timer || 90;
+      const restStr = rest % 60 === 0 ? `${rest / 60} minute${rest / 60 > 1 ? 's' : ''}` : `${rest} seconds`;
+      return [
+        'Warm up 10 min easy jog',
+        `${workout.repeats} × ${workout.distance} at hard effort`,
+        `${restStr} rest between each`,
+        'Cool down 10 min easy jog',
+      ];
+    }
+    case 'easy': {
+      const mins = Math.round((workout.work_seconds || 1800) / 60);
+      const lines = [`${mins} minutes at easy conversational pace`];
+      if (workout.stride_count) {
+        lines.push(`Then ${workout.stride_count} × ${workout.stride_seconds} second strides`);
+        lines.push(`Walk ${workout.stride_rest_seconds} seconds between strides`);
+        lines.push('Strides = fast but relaxed, not sprinting');
+      }
+      return lines;
+    }
+    case 'tempo': {
+      const mins = Math.round((workout.work_seconds || 900) / 60);
+      const isSpeed = workout.label === 'Tempo + Speed';
+      const lines = ['Warm up 10 min easy', `${mins} minutes at tempo pace (comfortably hard, 7/10 effort)`];
+      if (isSpeed) {
+        lines.push('2 min easy jog recovery', '4 × 200m fast (but controlled)', '90 sec walk/jog between 200s');
+      }
+      lines.push('Cool down 5 min easy');
+      return lines;
+    }
+    default:
+      return workout.instructions;
+  }
+}
+
+function generatePTInstructions(strength) {
+  switch (strength.timer_type) {
+    case 'rounds': {
+      const lines = [`${strength.rounds} rounds`];
+      if (strength.push_reps != null) lines.push(`${strength.push_reps} push-ups`);
+      if (strength.sit_reps  != null) lines.push(`${strength.sit_reps} sit-ups`);
+      lines.push(`Rest ${strength.rest_seconds} seconds between rounds`);
+      return lines;
+    }
+    case 'timed': {
+      const lines = [`${strength.rounds} round${strength.rounds > 1 ? 's' : ''}`];
+      lines.push(`Push-ups — ${strength.push_seconds} seconds`);
+      if (strength.between_seconds > 0) {
+        const m = strength.between_seconds / 60;
+        lines.push(`Rest ${Number.isInteger(m) ? m + ' minute' + (m > 1 ? 's' : '') : strength.between_seconds + ' seconds'}`);
+      }
+      lines.push(`Sit-ups — ${strength.sit_seconds} seconds`);
+      if (strength.rest_seconds > 0 && strength.rounds > 1) {
+        lines.push(`Rest ${strength.rest_seconds} seconds between rounds`);
+      }
+      return lines;
+    }
+    case 'emom': {
+      const half = Math.floor(strength.rounds / 2);
+      const odds  = Array.from({ length: half }, (_, i) => 2 * i + 1).join(',');
+      const evens = Array.from({ length: half }, (_, i) => 2 * i + 2).join(',');
+      return [
+        `${strength.rounds}-minute EMOM`,
+        `Odd minutes (${odds}): push-ups`,
+        `Even minutes (${evens}): sit-ups`,
+        'Start each set at the top of each minute',
+      ];
+    }
+    default:
+      return strength.instructions;
+  }
+}
+
+function renderAdjPanel(containerId, specs, customKey, onUpdate) {
   const container = document.getElementById(containerId);
   if (!container) return;
   if (!specs.length) { container.innerHTML = ''; return; }
@@ -1714,6 +1789,7 @@ function renderAdjPanel(containerId, specs, customKey) {
       specs.forEach(s => delete custom[s.key]);
       setCustom(customKey, custom);
       render();
+      if (onUpdate) onUpdate();
     });
 
     header.append(title, dot, resetBtn);
@@ -1750,10 +1826,10 @@ function renderAdjPanel(containerId, specs, customKey) {
         minusBtn.disabled = idx === 0;
         plusBtn.disabled = idx === opts.length - 1;
         minusBtn.addEventListener('click', () => {
-          if (idx > 0) { idx--; custom[spec.key] = opts[idx]; setCustom(customKey, custom); render(); }
+          if (idx > 0) { idx--; custom[spec.key] = opts[idx]; setCustom(customKey, custom); render(); if (onUpdate) onUpdate(); }
         });
         plusBtn.addEventListener('click', () => {
-          if (idx < opts.length - 1) { idx++; custom[spec.key] = opts[idx]; setCustom(customKey, custom); render(); }
+          if (idx < opts.length - 1) { idx++; custom[spec.key] = opts[idx]; setCustom(customKey, custom); render(); if (onUpdate) onUpdate(); }
         });
       } else {
         let val = currentVal(spec);
@@ -1761,10 +1837,10 @@ function renderAdjPanel(containerId, specs, customKey) {
         minusBtn.disabled = val <= spec.min;
         plusBtn.disabled = val >= spec.max;
         minusBtn.addEventListener('click', () => {
-          if (val > spec.min) { val = Math.max(spec.min, val - spec.step); custom[spec.key] = val; setCustom(customKey, custom); render(); }
+          if (val > spec.min) { val = Math.max(spec.min, val - spec.step); custom[spec.key] = val; setCustom(customKey, custom); render(); if (onUpdate) onUpdate(); }
         });
         plusBtn.addEventListener('click', () => {
-          if (val < spec.max) { val = Math.min(spec.max, val + spec.step); custom[spec.key] = val; setCustom(customKey, custom); render(); }
+          if (val < spec.max) { val = Math.min(spec.max, val + spec.step); custom[spec.key] = val; setCustom(customKey, custom); render(); if (onUpdate) onUpdate(); }
         });
       }
 
@@ -1959,12 +2035,11 @@ function openDetailModal(weekIndex, dayIndex) {
     `Week ${week.week} · Day ${dayIndex + 1} · ~${workout.estimated_distance_km} km`;
 
   const ul = document.getElementById('detail-instructions');
-  ul.innerHTML = '';
-  workout.instructions.forEach(step => {
-    const li = document.createElement('li');
-    li.textContent = step;
-    ul.appendChild(li);
-  });
+  function refreshRunInstructions() {
+    const effective = applyRunCustom(workout, weekIndex, dayIndex);
+    ul.innerHTML = generateRunInstructions(effective).map(s => `<li>${s}</li>`).join('');
+  }
+  refreshRunInstructions();
 
   const loggedSection = document.getElementById('detail-logged-info');
   const logData = document.getElementById('detail-log-data');
@@ -1988,7 +2063,7 @@ function openDetailModal(weekIndex, dayIndex) {
   detailContext = { weekIndex, dayIndex };
 
   // Render run adjustment panel
-  renderAdjPanel('detail-run-adj', getRunAdjSpecs(workout), runCustomKey(weekIndex, dayIndex));
+  renderAdjPanel('detail-run-adj', getRunAdjSpecs(workout), runCustomKey(weekIndex, dayIndex), refreshRunInstructions);
 
   // Update run tab button labels
   document.getElementById('detail-log-btn').textContent = entry ? 'Edit Log' : 'Log Workout';
@@ -2010,7 +2085,11 @@ function openDetailModal(weekIndex, dayIndex) {
 
     // Populate PT instructions
     const ptList = document.getElementById('detail-pt-instructions');
-    ptList.innerHTML = strength.instructions.map(s => `<li>${s}</li>`).join('');
+    function refreshPTInstructions() {
+      const effective = applyPTCustom(strength, weekIndex, dayIndex);
+      ptList.innerHTML = generatePTInstructions(effective).map(s => `<li>${s}</li>`).join('');
+    }
+    refreshPTInstructions();
 
     // PT completion status
     const ptEntry = getLogEntry(weekIndex, dayIndex);
@@ -2031,7 +2110,7 @@ function openDetailModal(weekIndex, dayIndex) {
     document.getElementById('detail-mark-pt-btn').textContent = ptDone ? 'Edit Log' : 'Log Strength';
 
     // Render PT adjustment panel
-    renderAdjPanel('detail-pt-adj', getPTAdjSpecs(strength), ptCustomKey(weekIndex, dayIndex));
+    renderAdjPanel('detail-pt-adj', getPTAdjSpecs(strength), ptCustomKey(weekIndex, dayIndex), refreshPTInstructions);
 
     // Wire PT buttons
     document.getElementById('detail-start-pt-btn').onclick = () => {
