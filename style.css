@@ -1166,3 +1166,130 @@ body {
 .flash {
   animation: flash-complete 0.4s ease-in-out 2;
 }
+
+/* ============================================================
+   PT (STRENGTH) SECTION
+   ============================================================ */
+
+:root {
+  --purple: #a78bfa;
+  --purple-bg: rgba(167, 139, 250, 0.15);
+}
+
+.pt-section {
+  margin-top: 8px;
+}
+
+.pt-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0 16px;
+}
+
+.pt-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pt-icon {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pt-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.pt-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.pt-done-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--green);
+  border-radius: 100px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pt-instructions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pt-instructions-list li {
+  font-size: 14px;
+  color: var(--text-muted);
+  padding-left: 16px;
+  position: relative;
+}
+
+.pt-instructions-list li::before {
+  content: '·';
+  position: absolute;
+  left: 4px;
+  color: var(--purple);
+}
+
+.pt-btn-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-pt {
+  background: var(--purple-bg);
+  color: var(--purple);
+  border: 1px solid var(--purple);
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  flex: 1;
+}
+
+.btn-pt:active {
+  opacity: 0.8;
+}
+
+.btn-sm {
+  padding: 12px 16px !important;
+  font-size: 14px !important;
+}
+
+/* PT color theming in timer */
+#timer-inner[data-color="purple"] #timer-phase-label { color: var(--purple); }
+#timer-inner[data-color="purple"] #timer-main-display { color: var(--purple); }
+#timer-inner[data-color="purple"] #timer-progress-bar { background: var(--purple); }
+
+/* PT badge in workout log */
+.log-entry-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.log-entry-pt {
+  background: var(--purple-bg);
+  color: var(--purple);
+  border-radius: 100px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}

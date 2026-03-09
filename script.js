@@ -12,6 +12,72 @@
 // Workout data inlined to support file:// and GitHub Pages without a server
 const WORKOUT_DATA = {"program":{"name":"8-Week 2-Mile Training Program","weeks":[{"week":1,"phase":1,"days":[{"day":1,"type":"intervals","label":"Intervals","color":"red","icon":"⚡","description":"Track intervals with full recovery","sets":6,"distance":"400m","rest_seconds":90,"estimated_distance_km":4.5,"instructions":["Warm up 10 min easy jog","6 × 400m at hard effort","90 seconds rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":120,"rest_seconds_timer":90,"repeats":6},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo Run","color":"orange","icon":"🔥","description":"Comfortably hard sustained effort","estimated_distance_km":5.5,"instructions":["Warm up 10 min easy","15 minutes at tempo pace (comfortably hard, 7/10 effort)","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":900},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic base building","estimated_distance_km":8,"instructions":["40–50 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":2,"phase":1,"days":[{"day":1,"type":"intervals","label":"Intervals","color":"red","icon":"⚡","description":"Track intervals with full recovery","sets":6,"distance":"400m","rest_seconds":90,"estimated_distance_km":4.5,"instructions":["Warm up 10 min easy jog","6 × 400m at hard effort","90 seconds rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":120,"rest_seconds_timer":90,"repeats":6},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo Run","color":"orange","icon":"🔥","description":"Comfortably hard sustained effort","estimated_distance_km":5.5,"instructions":["Warm up 10 min easy","15 minutes at tempo pace (comfortably hard, 7/10 effort)","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":900},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic base building","estimated_distance_km":8,"instructions":["40–50 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":3,"phase":1,"days":[{"day":1,"type":"intervals","label":"Intervals","color":"red","icon":"⚡","description":"Track intervals — volume increases","sets":8,"distance":"400m","rest_seconds":90,"estimated_distance_km":5.5,"instructions":["Warm up 10 min easy jog","8 × 400m at hard effort (or 5 × 600m)","90 seconds rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":120,"rest_seconds_timer":90,"repeats":8},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo Run","color":"orange","icon":"🔥","description":"Tempo duration increases this week","estimated_distance_km":6.5,"instructions":["Warm up 10 min easy","20 minutes at tempo pace (comfortably hard, 7/10 effort)","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":1200},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic base building","estimated_distance_km":8,"instructions":["40–50 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":4,"phase":1,"days":[{"day":1,"type":"intervals","label":"Intervals","color":"red","icon":"⚡","description":"Track intervals — peak phase 1 volume","sets":8,"distance":"400m","rest_seconds":90,"estimated_distance_km":5.5,"instructions":["Warm up 10 min easy jog","8 × 400m at hard effort (or 5 × 600m)","90 seconds rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":120,"rest_seconds_timer":90,"repeats":8},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo Run","color":"orange","icon":"🔥","description":"Comfortably hard sustained effort","estimated_distance_km":6.5,"instructions":["Warm up 10 min easy","20 minutes at tempo pace (comfortably hard, 7/10 effort)","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":1200},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic base building","estimated_distance_km":8,"instructions":["40–50 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":5,"phase":2,"days":[{"day":1,"type":"intervals","label":"Race Pace Intervals","color":"red","icon":"⚡","description":"Longer intervals at race pace","sets":4,"distance":"800m","rest_seconds":120,"estimated_distance_km":6,"instructions":["Warm up 10 min easy jog","4 × 800m at race pace (or 3 × 1000m)","2 minutes rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":240,"rest_seconds_timer":120,"repeats":4},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo + Speed","color":"orange","icon":"🔥","description":"Tempo followed by fast 200s","estimated_distance_km":7,"instructions":["Warm up 10 min easy","15 minutes at tempo pace","2 min easy jog recovery","4 × 200m fast (but controlled)","90 sec walk/jog between 200s","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":900},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic run — slightly shorter than Phase 1","estimated_distance_km":7,"instructions":["35–45 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":6,"phase":2,"days":[{"day":1,"type":"intervals","label":"Race Pace Intervals","color":"red","icon":"⚡","description":"Longer intervals at race pace","sets":4,"distance":"800m","rest_seconds":120,"estimated_distance_km":6,"instructions":["Warm up 10 min easy jog","4 × 800m at race pace (or 3 × 1000m)","2 minutes rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":240,"rest_seconds_timer":120,"repeats":4},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo + Speed","color":"orange","icon":"🔥","description":"Tempo followed by fast 200s","estimated_distance_km":7,"instructions":["Warm up 10 min easy","15 minutes at tempo pace","2 min easy jog recovery","4 × 200m fast (but controlled)","90 sec walk/jog between 200s","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":900},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic run","estimated_distance_km":7,"instructions":["35–45 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":7,"phase":2,"days":[{"day":1,"type":"intervals","label":"Race Pace Intervals","color":"red","icon":"⚡","description":"Longer intervals at race pace","sets":4,"distance":"800m","rest_seconds":120,"estimated_distance_km":6,"instructions":["Warm up 10 min easy jog","4 × 800m at race pace (or 3 × 1000m)","2 minutes rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":240,"rest_seconds_timer":120,"repeats":4},{"day":2,"type":"easy","label":"Easy Run + Strides","color":"green","icon":"🏃","description":"Comfortable aerobic pace with finishing strides","estimated_distance_km":6,"instructions":["30 minutes at easy conversational pace","Then 6 × 20 second strides","Walk 60 seconds between strides","Strides = fast but relaxed, not sprinting"],"timer_type":"countdown","work_seconds":1800,"stride_count":6,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"tempo","label":"Tempo + Speed","color":"orange","icon":"🔥","description":"Tempo followed by fast 200s","estimated_distance_km":7,"instructions":["Warm up 10 min easy","15 minutes at tempo pace","2 min easy jog recovery","4 × 200m fast (but controlled)","90 sec walk/jog between 200s","Cool down 5 min easy"],"timer_type":"countdown","work_seconds":900},{"day":4,"type":"long","label":"Long Run","color":"blue","icon":"🗺️","description":"Easy aerobic run","estimated_distance_km":7,"instructions":["35–45 minutes at easy comfortable pace","Should feel very relaxed and conversational","Focus on time on feet, not pace"],"timer_type":"stopwatch"}]},{"week":8,"phase":3,"phase_label":"Taper","days":[{"day":1,"type":"intervals","label":"Taper Intervals","color":"red","icon":"⚡","description":"Sharp race pace intervals — low volume","sets":4,"distance":"400m","rest_seconds":90,"estimated_distance_km":4,"instructions":["Warm up 10 min easy jog","4 × 400m at race pace — sharp and fast","90 seconds rest between each","Cool down 10 min easy jog"],"timer_type":"interval","work_seconds":120,"rest_seconds_timer":90,"repeats":4},{"day":2,"type":"easy","label":"Easy + Strides","color":"green","icon":"🏃","description":"Short easy run to stay sharp","estimated_distance_km":4,"instructions":["15 minutes easy jog","4 × 20 second strides","Walk 60 seconds between strides","Stay relaxed — legs should feel fresh"],"timer_type":"countdown","work_seconds":900,"stride_count":4,"stride_seconds":20,"stride_rest_seconds":60},{"day":3,"type":"race","label":"2-Mile Time Trial","color":"red","icon":"🏁","description":"Race day — go for it!","estimated_distance_km":3.2,"instructions":["Warm up 15 min easy with a few strides","RUN 2 MILES AS FAST AS YOU CAN","Record your time","Cool down 10 min easy walk/jog"],"timer_type":"stopwatch"}]}]}};
 
+// PT (push-up/sit-up) program — paired day-for-day with the running program
+// Day 1=Monday(Speed), Day 2=Tuesday(Volume), Day 3=Thursday(Capacity), Day 4=Friday(Test)
+// Weeks 1-2 share same data, Weeks 3-4 share, Weeks 5-6 share, Weeks 7-8 share.
+const STRENGTH_DATA = [
+  // Weeks 1-2
+  {days:[
+    {label:"Speed Rounds",icon:"💪",description:"Fast rounds to build speed",
+     instructions:["6 rounds","10 fast push-ups","12 fast sit-ups","Rest 30 seconds between rounds"],
+     timer_type:"rounds",rounds:6,push_reps:10,sit_reps:12,work_seconds:45,rest_seconds:30},
+    {label:"Volume Ladder",icon:"📊",description:"Push-up and sit-up ladders",
+     instructions:["Push-up ladder: 1-2-3-4-5-6-5-4-3-2-1","Sit-up ladder: 2-4-6-8-10-12-10-8-6-4-2","Minimal rest between sets","Complete all push-ups first, then all sit-ups"],
+     timer_type:"ladder",rounds:null,work_seconds:null,rest_seconds:null},
+    {label:"Capacity Rounds",icon:"💪",description:"Capacity-building rounds",
+     instructions:["8 rounds","8 push-ups","10 sit-ups","Rest 30 seconds between rounds"],
+     timer_type:"rounds",rounds:8,push_reps:8,sit_reps:10,work_seconds:40,rest_seconds:30},
+    {label:"Test Simulation",icon:"🎯",description:"Timed test simulation",
+     instructions:["3 rounds","Push-ups — 45 seconds","Rest 1 minute","Sit-ups — 45 seconds","Rest as needed between rounds"],
+     timer_type:"timed",rounds:3,push_seconds:45,between_seconds:60,sit_seconds:45,rest_seconds:90}
+  ]},
+  // Weeks 3-4
+  {days:[
+    {label:"Volume Rounds",icon:"💪",description:"Volume-focused rounds",
+     instructions:["10 rounds","8 push-ups","10 sit-ups","Rest 20 seconds between rounds"],
+     timer_type:"rounds",rounds:10,push_reps:8,sit_reps:10,work_seconds:40,rest_seconds:20},
+    {label:"Max Effort Sets",icon:"📊",description:"Near-max rep sets with recovery",
+     instructions:["4 rounds","Push-ups — 70% of your max reps","Sit-ups — 70% of your max reps","Rest 90 seconds between rounds"],
+     timer_type:"rounds",rounds:4,push_reps:null,sit_reps:null,work_seconds:60,rest_seconds:90},
+    {label:"10-Min EMOM",icon:"⏱️",description:"Every minute on the minute",
+     instructions:["10-minute EMOM","Odd minutes (1,3,5,7,9): 12–15 push-ups","Even minutes (2,4,6,8,10): 15–20 sit-ups","Start each set at the top of each minute"],
+     timer_type:"emom",rounds:10,work_seconds:60,rest_seconds:0},
+    {label:"Timed Test Prep",icon:"🎯",description:"1-minute timed blocks",
+     instructions:["3 rounds","Push-ups — 1 minute","Rest 2 minutes","Sit-ups — 1 minute","Stop just before failure"],
+     timer_type:"timed",rounds:3,push_seconds:60,between_seconds:120,sit_seconds:60,rest_seconds:120}
+  ]},
+  // Weeks 5-6
+  {days:[
+    {label:"Explosive Rounds",icon:"⚡",description:"Explosive speed rounds",
+     instructions:["12 rounds","6 explosive push-ups","8 explosive sit-ups","Rest 15 seconds between rounds"],
+     timer_type:"rounds",rounds:12,push_reps:6,sit_reps:8,work_seconds:30,rest_seconds:15},
+    {label:"Near Max Sets",icon:"📊",description:"High-percentage max sets",
+     instructions:["3 rounds","Push-ups — 75% of your max reps","Sit-ups — 75% of your max reps","Rest 2 minutes between rounds"],
+     timer_type:"rounds",rounds:3,push_reps:null,sit_reps:null,work_seconds:60,rest_seconds:120},
+    {label:"Speed Intervals",icon:"⚡",description:"30-second speed intervals",
+     instructions:["3 rounds","Push-ups — 30 seconds fast","Sit-ups — 30 seconds fast","Rest 2 minutes between rounds"],
+     timer_type:"timed",rounds:3,push_seconds:30,between_seconds:0,sit_seconds:30,rest_seconds:120},
+    {label:"Peak Test",icon:"🎯",description:"Max effort + 50% follow-up",
+     instructions:["1 minute push-ups — full effort","Rest 3 minutes","1 minute sit-ups — full effort","Then 2 more sets at 50% effort"],
+     timer_type:"timed",rounds:3,push_seconds:60,between_seconds:180,sit_seconds:60,rest_seconds:0}
+  ]},
+  // Weeks 7-8
+  {days:[
+    {label:"High Volume Rounds",icon:"💪",description:"High-rep strength rounds",
+     instructions:["5 rounds","20 push-ups","25 sit-ups","Rest 60–90 seconds between rounds"],
+     timer_type:"rounds",rounds:5,push_reps:20,sit_reps:25,work_seconds:75,rest_seconds:75},
+    {label:"Speed Density",icon:"⚡",description:"Fast rounds with minimal rest",
+     instructions:["10 rounds","8 push-ups","10 sit-ups","Rest 15 seconds between rounds"],
+     timer_type:"rounds",rounds:10,push_reps:8,sit_reps:10,work_seconds:30,rest_seconds:15},
+    {label:"Max Effort Blocks",icon:"🔥",description:"Full effort timed blocks",
+     instructions:["2 rounds — full effort","Push-ups — 1 minute","Sit-ups — 1 minute","Rest as needed between rounds"],
+     timer_type:"timed",rounds:2,push_seconds:60,between_seconds:0,sit_seconds:60,rest_seconds:90},
+    {label:"Final Test",icon:"🏆",description:"Culminating PT assessment",
+     instructions:["Final test — maximum effort","Push-ups — 1 minute (record your count)","Rest 3 minutes","Sit-ups — 1 minute (record your count)"],
+     timer_type:"timed",rounds:1,push_seconds:60,between_seconds:180,sit_seconds:60,rest_seconds:0}
+  ]}
+];
+
 let WORKOUTS = null;   // Set from WORKOUT_DATA on init
 let progress = null;   // Loaded from localStorage (mirrors progress.json structure)
 
@@ -87,6 +153,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function loadWorkouts() {
   WORKOUTS = WORKOUT_DATA.program.weeks;
+  // Inject PT strength data into each day
+  // STRENGTH_DATA has 4 phase configs; weeks 1-2 → phase 0, weeks 3-4 → phase 1, etc.
+  WORKOUTS.forEach((week, wi) => {
+    const phaseIdx = Math.floor(wi / 2); // 0,0,1,1,2,2,3,3
+    const ptPhase = STRENGTH_DATA[Math.min(phaseIdx, STRENGTH_DATA.length - 1)];
+    week.days.forEach((day, di) => {
+      day.strength = ptPhase.days[di] || null;
+    });
+  });
 }
 
 function defaultProgress() {
@@ -358,6 +433,47 @@ function renderWorkoutCard(weekIndex, dayIndex, scheduleEntry) {
   // Wire up buttons for this workout
   startBtn.onclick = () => openTimerModal(workout, weekIndex, dayIndex);
   logManualBtn.onclick = () => openLogModal(workout, weekIndex, dayIndex);
+
+  // PT section
+  renderPTSection(weekIndex, dayIndex);
+}
+
+function renderPTSection(weekIndex, dayIndex) {
+  // Remove any existing PT section in today-card
+  const existing = document.getElementById('today-pt-section');
+  if (existing) existing.remove();
+
+  const strength = WORKOUTS[weekIndex]?.days[dayIndex]?.strength;
+  if (!strength) return;
+
+  const ptDone = isPTDone(weekIndex, dayIndex);
+
+  const section = document.createElement('div');
+  section.id = 'today-pt-section';
+  section.className = 'pt-section';
+  section.innerHTML = `
+    <div class="pt-divider"></div>
+    <div class="pt-header">
+      <span class="pt-icon">${strength.icon}</span>
+      <div>
+        <div class="pt-title">${strength.label}</div>
+        <div class="pt-desc">${strength.description}</div>
+      </div>
+      ${ptDone ? '<span class="pt-done-badge">✓ Done</span>' : ''}
+    </div>
+    <ul class="pt-instructions-list">
+      ${strength.instructions.map(s => `<li>${s}</li>`).join('')}
+    </ul>
+    <div class="pt-btn-row">
+      <button class="btn btn-pt" id="start-pt-btn">▶ Start PT</button>
+      <button class="btn btn-secondary btn-sm" id="mark-pt-btn">${ptDone ? '✓ PT Done' : 'Mark Done'}</button>
+    </div>
+  `;
+
+  document.getElementById('today-card').appendChild(section);
+
+  document.getElementById('start-pt-btn').onclick = () => openPTTimerModal(weekIndex, dayIndex);
+  document.getElementById('mark-pt-btn').onclick = () => markPTDone(weekIndex, dayIndex);
 }
 
 // ============================================================
@@ -640,7 +756,10 @@ function renderLogList() {
         <div class="log-entry-title">W${weekData.week} D${entry.dayIndex + 1} — ${workoutData.label}</div>
         <div class="log-entry-sub">${entry.date || ''}${sub ? '  ·  ' + sub : ''}</div>
       </div>
-      ${entry.rpe != null ? `<span class="log-entry-rpe">RPE ${entry.rpe}</span>` : ''}
+      <div class="log-entry-badges">
+        ${entry.rpe != null ? `<span class="log-entry-rpe">RPE ${entry.rpe}</span>` : ''}
+        ${entry.pt_done ? `<span class="log-entry-pt">PT ✓</span>` : ''}
+      </div>
     `;
     row.addEventListener('click', () => openDetailModal(entry.weekIndex, entry.dayIndex));
     container.appendChild(row);
@@ -783,6 +902,85 @@ function parseDistanceKm(str) {
   return m[2].toLowerCase() === 'km' ? val : val / 1000;
 }
 
+function buildStrengthPhases(strength) {
+  const phases = [];
+
+  switch (strength.timer_type) {
+    case 'rounds': {
+      const repDesc = strength.push_reps
+        ? `${strength.push_reps} push-ups, ${strength.sit_reps} sit-ups`
+        : 'push-ups and sit-ups';
+      phases.push({
+        kind: 'intervals', label: strength.label, color: 'purple',
+        reps: strength.rounds,
+        workSeconds: strength.work_seconds,
+        restSeconds: strength.rest_seconds,
+        voiceStart: `${strength.rounds} rounds. ${repDesc}. Rest ${strength.rest_seconds} seconds.`,
+        voiceRepStart:  (r, t) => `Round ${r} of ${t}. Go!`,
+        voiceRestStart: (r)    => `Round ${r} done. Rest.`,
+        voiceComplete: 'PT complete! Great work.',
+      });
+      break;
+    }
+    case 'emom': {
+      phases.push({
+        kind: 'intervals', label: 'EMOM', color: 'purple',
+        reps: strength.rounds,
+        workSeconds: 55, restSeconds: 5,
+        voiceStart: `${strength.rounds} minute EMOM. Odd minutes push-ups, even minutes sit-ups.`,
+        voiceRepStart:  (r) => r % 2 === 1 ? `Minute ${r}. Push-ups. Go!` : `Minute ${r}. Sit-ups. Go!`,
+        voiceRestStart: ()  => 'Next minute coming up.',
+        voiceComplete: 'EMOM complete!',
+      });
+      break;
+    }
+    case 'timed': {
+      for (let r = 0; r < strength.rounds; r++) {
+        const rLabel = strength.rounds > 1 ? ` Round ${r + 1}.` : '';
+        phases.push({
+          kind: 'countdown', label: 'Push-ups', color: 'purple',
+          seconds: strength.push_seconds,
+          voiceStart: `${rLabel} Push-ups. ${strength.push_seconds} seconds. Go!`,
+        });
+        if (strength.between_seconds > 0) {
+          phases.push({
+            kind: 'countdown', label: 'Rest', color: 'rest',
+            seconds: strength.between_seconds,
+            voiceStart: `Rest. ${strength.between_seconds} seconds.`,
+          });
+        }
+        phases.push({
+          kind: 'countdown', label: 'Sit-ups', color: 'purple',
+          seconds: strength.sit_seconds,
+          voiceStart: 'Sit-ups. Go!',
+        });
+        if (r < strength.rounds - 1 && strength.rest_seconds > 0) {
+          phases.push({
+            kind: 'countdown', label: 'Rest', color: 'rest',
+            seconds: strength.rest_seconds,
+            voiceStart: `Rest. ${strength.rest_seconds} seconds.`,
+          });
+        }
+      }
+      break;
+    }
+    default: {
+      phases.push({
+        kind: 'stopwatch', label: strength.label, color: 'purple',
+        voiceStart: `Starting ${strength.label}. Follow your instructions.`,
+      });
+    }
+  }
+
+  phases.forEach((p, i) => {
+    p.phaseIndex = i;
+    p.totalPhases = phases.length;
+    p.phaseLabel = phases.length > 1 ? `Phase ${i + 1} of ${phases.length}` : '';
+  });
+
+  return phases;
+}
+
 function buildWorkoutPhases(workout) {
   const phases = [];
 
@@ -910,6 +1108,29 @@ function buildWorkoutPhases(workout) {
 // ============================================================
 // TIMER MODAL
 // ============================================================
+
+function openPTTimerModal(weekIndex, dayIndex) {
+  const strength = WORKOUTS[weekIndex].days[dayIndex].strength;
+  if (!strength) return;
+
+  // Reuse timer machinery — mark as PT so Done button logs PT
+  timerState.workout = { ...strength, weekIndex, dayIndex, isPT: true };
+  timerState.phases = buildStrengthPhases(strength);
+  timerState.running = false;
+  clearInterval(timerState.intervalHandle);
+
+  // No GPS for PT
+  stopGPS();
+  document.getElementById('gps-distance-display').classList.add('hidden');
+  document.getElementById('gps-bar').style.display = 'none';
+
+  document.getElementById('timer-workout-label').textContent = strength.label;
+  document.getElementById('timer-play-btn').textContent = '▶';
+  document.getElementById('timer-inner').classList.remove('timer-running');
+
+  initPhase(0);
+  document.getElementById('timer-modal').classList.remove('hidden');
+}
 
 function openTimerModal(workout, weekIndex, dayIndex) {
   timerState.workout = { ...workout, weekIndex, dayIndex };
@@ -1185,8 +1406,8 @@ function startTimer() {
   initSpeech(); // Unlock iOS speech synthesis on user gesture
   initBeeps();  // Pre-generate WAV blobs so first beep isn't delayed
 
-  // Auto-start GPS tracking on first press
-  if (!gpsState.active) {
+  // Auto-start GPS tracking on first press (not for PT workouts)
+  if (!gpsState.active && !timerState.workout?.isPT) {
     startGPS();
   }
 
@@ -1232,6 +1453,7 @@ function closeTimerModal() {
   pauseTimer();
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   stopGPS();
+  document.getElementById('gps-bar').style.display = '';  // restore for next run
   document.getElementById('timer-modal').classList.add('hidden');
 }
 
@@ -1283,6 +1505,28 @@ function openLogModal(workout, weekIndex, dayIndex) {
   stopGPS();
 
   document.getElementById('log-modal').classList.remove('hidden');
+}
+
+function isPTDone(weekIndex, dayIndex) {
+  const entry = getLogEntry(weekIndex, dayIndex);
+  return entry?.pt_done === true;
+}
+
+function markPTDone(weekIndex, dayIndex, rpe) {
+  const existing = getLogEntry(weekIndex, dayIndex) || {
+    weekIndex, dayIndex, type: 'strength', date: todayISO(), loggedAt: new Date().toISOString()
+  };
+  existing.pt_done = true;
+  if (rpe != null) existing.pt_rpe = rpe;
+  existing.loggedAt = new Date().toISOString();
+
+  progress.workouts = progress.workouts.filter(
+    w => !(w.weekIndex === weekIndex && w.dayIndex === dayIndex)
+  );
+  progress.workouts.push(existing);
+  saveProgress();
+  renderTodayPage();
+  renderWorkoutsPage();
 }
 
 function saveLog() {
@@ -1435,6 +1679,7 @@ function openDetailModal(weekIndex, dayIndex) {
       entry.pace     ? `Pace: ${entry.pace} min/km` : '',
       entry.rpe != null ? `RPE: ${entry.rpe}/10` : '',
       entry.notes    ? `Notes: ${entry.notes}` : '',
+      entry.pt_done ? 'PT: ✓ Complete' : '',
     ].filter(Boolean).join('<br>');
   } else {
     loggedSection.classList.add('hidden');
@@ -1447,6 +1692,47 @@ function openDetailModal(weekIndex, dayIndex) {
   document.getElementById('detail-log-btn').textContent = entry ? 'Edit Log' : 'Log Workout';
 
   document.getElementById('detail-modal').classList.remove('hidden');
+
+  // PT section in detail modal
+  const existingPT = document.getElementById('detail-pt-section');
+  if (existingPT) existingPT.remove();
+  const strength = WORKOUTS[weekIndex]?.days[dayIndex]?.strength;
+  if (strength) {
+    const ptDone = isPTDone(weekIndex, dayIndex);
+    const ptSection = document.createElement('div');
+    ptSection.id = 'detail-pt-section';
+    ptSection.className = 'pt-section';
+    ptSection.innerHTML = `
+      <div class="pt-divider"></div>
+      <div class="pt-header">
+        <span class="pt-icon">${strength.icon}</span>
+        <div>
+          <div class="pt-title">${strength.label}</div>
+          <div class="pt-desc">${strength.description}</div>
+        </div>
+        ${ptDone ? '<span class="pt-done-badge">✓ Done</span>' : ''}
+      </div>
+      <ul class="pt-instructions-list">
+        ${strength.instructions.map(s => `<li>${s}</li>`).join('')}
+      </ul>
+      <div class="pt-btn-row">
+        <button class="btn btn-pt" id="detail-start-pt-btn">▶ Start PT</button>
+        <button class="btn btn-secondary btn-sm" id="detail-mark-pt-btn">${ptDone ? '✓ PT Done' : 'Mark Done'}</button>
+      </div>
+    `;
+    document.querySelector('#detail-modal .modal-sheet').insertBefore(
+      ptSection,
+      document.getElementById('detail-start-btn')
+    );
+    document.getElementById('detail-start-pt-btn').onclick = () => {
+      document.getElementById('detail-modal').classList.add('hidden');
+      openPTTimerModal(weekIndex, dayIndex);
+    };
+    document.getElementById('detail-mark-pt-btn').onclick = () => {
+      markPTDone(weekIndex, dayIndex);
+      document.getElementById('detail-modal').classList.add('hidden');
+    };
+  }
 }
 
 // ============================================================
@@ -1710,7 +1996,11 @@ function bindEvents() {
   document.getElementById('timer-done-btn').addEventListener('click', () => {
     const w = timerState.workout;
     closeTimerModal();
-    if (w) openLogModal(w, w.weekIndex, w.dayIndex);
+    if (w?.isPT) {
+      markPTDone(w.weekIndex, w.dayIndex);
+    } else if (w) {
+      openLogModal(w, w.weekIndex, w.dayIndex);
+    }
   });
 
   // Log modal
