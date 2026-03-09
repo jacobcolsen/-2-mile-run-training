@@ -23,7 +23,8 @@ const STRENGTH_DATA = [
      timer_type:"rounds",rounds:6,push_reps:10,sit_reps:12,work_seconds:45,rest_seconds:30},
     {label:"Volume Ladder",icon:"📊",description:"Push-up and sit-up ladders",
      instructions:["Push-up ladder: 1-2-3-4-5-6-5-4-3-2-1","Sit-up ladder: 2-4-6-8-10-12-10-8-6-4-2","Minimal rest between sets","Complete all push-ups first, then all sit-ups"],
-     timer_type:"ladder",rounds:null,work_seconds:null,rest_seconds:null},
+     timer_type:"ladder",rounds:null,work_seconds:null,rest_seconds:null,
+     push_ladder:[1,2,3,4,5,6,5,4,3,2,1],sit_ladder:[2,4,6,8,10,12,10,8,6,4,2]},
     {label:"Capacity Rounds",icon:"💪",description:"Capacity-building rounds",
      instructions:["8 rounds","8 push-ups","10 sit-ups","Rest 30 seconds between rounds"],
      timer_type:"rounds",rounds:8,push_reps:8,sit_reps:10,work_seconds:40,rest_seconds:30},
@@ -953,68 +954,119 @@ function buildStrengthPhases(strength) {
   const phases = [];
 
   switch (strength.timer_type) {
+
     case 'rounds': {
-      const repDesc = strength.push_reps
-        ? `${strength.push_reps} push-ups, ${strength.sit_reps} sit-ups`
-        : 'push-ups and sit-ups';
+      const hasReps = strength.push_reps != null;
+      const repDesc = hasReps
+        ? `${strength.push_reps} push-ups, then ${strength.sit_reps} sit-ups`
+        : 'push-ups to near max, then sit-ups';
+      const workNote = hasReps
+        ? `${strength.push_reps} push-ups · ${strength.sit_reps} sit-ups`
+        : 'Push-ups → Sit-ups';
       phases.push({
         kind: 'intervals', label: strength.label, color: 'purple',
         reps: strength.rounds,
         workSeconds: strength.work_seconds,
         restSeconds: strength.rest_seconds,
-        voiceStart: `${strength.rounds} rounds. ${repDesc}. Rest ${strength.rest_seconds} seconds.`,
-        voiceRepStart:  (r, t) => `Round ${r} of ${t}. Go!`,
-        voiceRestStart: (r)    => `Round ${r} done. Rest.`,
-        voiceComplete: 'PT complete! Great work.',
+        workNote,
+        restNote: `Rest ${strength.rest_seconds}s`,
+        voiceStart: `${strength.rounds} rounds. Each round: ${repDesc}. ${strength.work_seconds} seconds work, ${strength.rest_seconds} seconds rest.`,
+        voiceRepStart:  (r, t) => `Round ${r} of ${t}. ${repDesc}. Go!`,
+        voiceRestStart: (r)    => `Round ${r} done. Rest ${strength.rest_seconds} seconds.`,
+        voiceComplete:  'All rounds complete! Great work.',
+        skipDefaultPhaseLabel: true, phaseLabel: '',
       });
       break;
     }
+
     case 'emom': {
       phases.push({
         kind: 'intervals', label: 'EMOM', color: 'purple',
         reps: strength.rounds,
         workSeconds: 55, restSeconds: 5,
-        voiceStart: `${strength.rounds} minute EMOM. Odd minutes push-ups, even minutes sit-ups.`,
+        repNote: (r) => r % 2 === 1 ? '💪 Push-ups' : '🦵 Sit-ups',
+        voiceStart: `${strength.rounds} minute EMOM. Odd minutes: push-ups. Even minutes: sit-ups. Starting now.`,
         voiceRepStart:  (r) => r % 2 === 1 ? `Minute ${r}. Push-ups. Go!` : `Minute ${r}. Sit-ups. Go!`,
         voiceRestStart: ()  => 'Next minute coming up.',
-        voiceComplete: 'EMOM complete!',
+        voiceComplete: 'EMOM complete! Great work.',
+        skipDefaultPhaseLabel: true, phaseLabel: '',
       });
       break;
     }
+
     case 'timed': {
       for (let r = 0; r < strength.rounds; r++) {
-        const rLabel = strength.rounds > 1 ? ` Round ${r + 1}.` : '';
+        const roundLabel = strength.rounds > 1 ? `Round ${r + 1} of ${strength.rounds}` : '';
+        const rVoice = strength.rounds > 1 ? `Round ${r + 1}. ` : '';
         phases.push({
           kind: 'countdown', label: 'Push-ups', color: 'purple',
           seconds: strength.push_seconds,
-          voiceStart: `${rLabel} Push-ups. ${strength.push_seconds} seconds. Go!`,
+          skipDefaultPhaseLabel: true, phaseLabel: roundLabel,
+          voiceStart: `${rVoice}Push-ups. ${strength.push_seconds} seconds. Go!`,
         });
         if (strength.between_seconds > 0) {
           phases.push({
             kind: 'countdown', label: 'Rest', color: 'rest',
             seconds: strength.between_seconds,
-            voiceStart: `Rest. ${strength.between_seconds} seconds.`,
+            skipDefaultPhaseLabel: true, phaseLabel: roundLabel,
+            voiceStart: `Rest. ${strength.between_seconds} seconds. Then sit-ups.`,
           });
         }
         phases.push({
           kind: 'countdown', label: 'Sit-ups', color: 'purple',
           seconds: strength.sit_seconds,
-          voiceStart: 'Sit-ups. Go!',
+          skipDefaultPhaseLabel: true, phaseLabel: roundLabel,
+          voiceStart: `Sit-ups. ${strength.sit_seconds} seconds. Go!`,
         });
         if (r < strength.rounds - 1 && strength.rest_seconds > 0) {
           phases.push({
             kind: 'countdown', label: 'Rest', color: 'rest',
             seconds: strength.rest_seconds,
-            voiceStart: `Rest. ${strength.rest_seconds} seconds.`,
+            skipDefaultPhaseLabel: true, phaseLabel: `Round ${r + 2} next`,
+            voiceStart: `Rest. ${strength.rest_seconds} seconds. Round ${r + 2} coming up.`,
           });
         }
       }
       break;
     }
+
     default: {
+      // Ladder — step-by-step guided execution
+      const pushSeq = strength.push_ladder || [1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1];
+      const sitSeq  = strength.sit_ladder  || [2, 4, 6, 8, 10, 12, 10, 8, 6, 4, 2];
+
       phases.push({
-        kind: 'stopwatch', label: strength.label, color: 'purple',
-        voiceStart: `Starting ${strength.label}. Follow your instructions.`,
+        kind: 'countdown', label: 'Get Ready', color: 'purple', seconds: 10,
+        skipDefaultPhaseLabel: true, phaseLabel: 'Push-ups first',
+        voiceStart: 'Volume ladder. Push-ups first, then sit-ups. Tap the skip arrow when each set is done.',
+      });
+
+      pushSeq.forEach((reps, i) => {
+        phases.push({
+          kind: 'countdown', label: `Push-ups — ${reps}`,
+          color: 'purple',
+          seconds: Math.max(20, reps * 4 + 10),
+          skipDefaultPhaseLabel: true,
+          phaseLabel: `Push-up set ${i + 1} of ${pushSeq.length}`,
+          voiceStart: `${reps} push-up${reps > 1 ? 's' : ''}. Go!`,
+        });
+      });
+
+      phases.push({
+        kind: 'countdown', label: 'Switch to Sit-ups', color: 'rest', seconds: 15,
+        skipDefaultPhaseLabel: true, phaseLabel: 'Push-ups done!',
+        voiceStart: 'Push-up ladder complete. Get ready for sit-ups.',
+      });
+
+      sitSeq.forEach((reps, i) => {
+        phases.push({
+          kind: 'countdown', label: `Sit-ups — ${reps}`,
+          color: 'purple',
+          seconds: Math.max(20, reps * 5 + 10),
+          skipDefaultPhaseLabel: true,
+          phaseLabel: `Sit-up set ${i + 1} of ${sitSeq.length}`,
+          voiceStart: `${reps} sit-up${reps > 1 ? 's' : ''}. Go!`,
+        });
       });
     }
   }
@@ -1022,7 +1074,9 @@ function buildStrengthPhases(strength) {
   phases.forEach((p, i) => {
     p.phaseIndex = i;
     p.totalPhases = phases.length;
-    p.phaseLabel = phases.length > 1 ? `Phase ${i + 1} of ${phases.length}` : '';
+    if (!p.skipDefaultPhaseLabel) {
+      p.phaseLabel = phases.length > 1 ? `Phase ${i + 1} of ${phases.length}` : '';
+    }
   });
 
   return phases;
@@ -1375,8 +1429,17 @@ function updateTimerDisplay() {
   if (isGPSIntervalWork && phase.distanceLabel) phaseLabel = `Run ${phase.distanceLabel}`;
   document.getElementById('timer-phase-label').textContent = phaseLabel;
 
-  // Sub-label: show target distance during GPS work, or phase position
+  // Sub-label: show target distance during GPS work, exercise note, or phase position
   let phaseSub = phase.phaseLabel || '';
+  if (!phaseSub) {
+    if (phase.repNote) {
+      phaseSub = phase.repNote(timerState.repCurrent);
+    } else if (timerState.subPhase === 'work' && phase.workNote) {
+      phaseSub = phase.workNote;
+    } else if (timerState.subPhase === 'rest' && phase.restNote) {
+      phaseSub = phase.restNote;
+    }
+  }
   if (isGPSIntervalWork && phase.targetDistanceKm) {
     phaseSub = `Target: ${phase.distanceLabel}`;
   }
