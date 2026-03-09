@@ -469,13 +469,13 @@ function renderPTSection(weekIndex, dayIndex) {
     </ul>
     <div class="pt-btn-row">
       <button class="btn btn-pt" id="start-pt-btn">▶ Start PT</button>
-      <button class="btn btn-secondary" id="mark-pt-btn">${ptDone ? '✓ Done' : 'Mark Done'}</button>
+      <button class="btn btn-secondary" id="mark-pt-btn">${ptDone ? 'Edit Log' : 'Log Strength'}</button>
     </div>
   `;
 
   document.getElementById('today-card').appendChild(section);
   document.getElementById('start-pt-btn').onclick = () => openPTTimerModal(weekIndex, dayIndex);
-  document.getElementById('mark-pt-btn').onclick = () => markPTDone(weekIndex, dayIndex);
+  document.getElementById('mark-pt-btn').onclick = () => openPTLogModal(weekIndex, dayIndex);
 }
 
 // ============================================================
@@ -1575,6 +1575,58 @@ function markPTDone(weekIndex, dayIndex, rpe) {
   renderWorkoutsPage();
 }
 
+let pendingPTLog = null;  // { weekIndex, dayIndex }
+let selectedPTRPE = null;
+
+function openPTLogModal(weekIndex, dayIndex) {
+  pendingPTLog = { weekIndex, dayIndex };
+  selectedPTRPE = null;
+
+  const existing = getLogEntry(weekIndex, dayIndex);
+  document.getElementById('pt-log-pushups').value = existing?.pt_pushups ?? '';
+  document.getElementById('pt-log-situps').value  = existing?.pt_situps  ?? '';
+  document.getElementById('pt-log-notes').value   = existing?.pt_notes   ?? '';
+  selectedPTRPE = existing?.pt_rpe ?? null;
+  document.querySelectorAll('#pt-rpe-picker .rpe-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.rpe) === selectedPTRPE);
+  });
+
+  document.getElementById('pt-log-modal').classList.remove('hidden');
+}
+
+function savePTLog() {
+  if (!pendingPTLog) return;
+  const { weekIndex, dayIndex } = pendingPTLog;
+
+  const pushups = parseInt(document.getElementById('pt-log-pushups').value) || null;
+  const situps  = parseInt(document.getElementById('pt-log-situps').value)  || null;
+  const notes   = document.getElementById('pt-log-notes').value.trim() || null;
+
+  const existing = getLogEntry(weekIndex, dayIndex) || {
+    weekIndex, dayIndex, type: 'strength', date: todayISO()
+  };
+  existing.pt_done    = true;
+  existing.pt_pushups = pushups;
+  existing.pt_situps  = situps;
+  existing.pt_rpe     = selectedPTRPE;
+  existing.pt_notes   = notes;
+  existing.loggedAt   = new Date().toISOString();
+
+  progress.workouts = progress.workouts.filter(
+    w => !(w.weekIndex === weekIndex && w.dayIndex === dayIndex)
+  );
+  progress.workouts.push(existing);
+  saveProgress();
+
+  document.getElementById('pt-log-modal').classList.add('hidden');
+  pendingPTLog = null;
+  renderTodayPage();
+  renderWorkoutsPage();
+  if (document.getElementById('page-progress').classList.contains('active')) {
+    renderProgressPage();
+  }
+}
+
 function saveLog() {
   if (!pendingLogWorkout) return;
 
@@ -1757,9 +1809,22 @@ function openDetailModal(weekIndex, dayIndex) {
     ptList.innerHTML = strength.instructions.map(s => `<li>${s}</li>`).join('');
 
     // PT completion status
-    const ptDone = isPTDone(weekIndex, dayIndex);
-    document.getElementById('detail-pt-logged-info').classList.toggle('hidden', !ptDone);
-    document.getElementById('detail-mark-pt-btn').textContent = ptDone ? '✓ Done' : 'Mark Done';
+    const ptEntry = getLogEntry(weekIndex, dayIndex);
+    const ptDone = ptEntry?.pt_done === true;
+    const ptLoggedInfo = document.getElementById('detail-pt-logged-info');
+    ptLoggedInfo.classList.toggle('hidden', !ptDone);
+    if (ptDone) {
+      const lines = [
+        ptEntry.pt_pushups != null ? `Push-ups: ${ptEntry.pt_pushups}` : '',
+        ptEntry.pt_situps  != null ? `Sit-ups: ${ptEntry.pt_situps}`   : '',
+        ptEntry.pt_rpe     != null ? `RPE: ${ptEntry.pt_rpe}/10`       : '',
+        ptEntry.pt_notes               ? `Notes: ${ptEntry.pt_notes}`  : '',
+      ].filter(Boolean);
+      ptLoggedInfo.innerHTML = lines.length
+        ? `<div class="detail-pt-done-row">✓ PT Complete</div><div class="detail-pt-log-data">${lines.join('<br>')}</div>`
+        : `<div class="detail-pt-done-row">✓ PT Complete</div>`;
+    }
+    document.getElementById('detail-mark-pt-btn').textContent = ptDone ? 'Edit Log' : 'Log Strength';
 
     // Wire PT buttons
     document.getElementById('detail-start-pt-btn').onclick = () => {
@@ -1767,11 +1832,8 @@ function openDetailModal(weekIndex, dayIndex) {
       openPTTimerModal(weekIndex, dayIndex);
     };
     document.getElementById('detail-mark-pt-btn').onclick = () => {
-      markPTDone(weekIndex, dayIndex);
-      // Refresh done state in modal
-      const nowDone = isPTDone(weekIndex, dayIndex);
-      document.getElementById('detail-pt-logged-info').classList.toggle('hidden', !nowDone);
-      document.getElementById('detail-mark-pt-btn').textContent = nowDone ? '✓ Done' : 'Mark Done';
+      document.getElementById('detail-modal').classList.add('hidden');
+      openPTLogModal(weekIndex, dayIndex);
     };
   } else {
     tabs.classList.add('hidden');
@@ -2042,7 +2104,7 @@ function bindEvents() {
     const w = timerState.workout;
     closeTimerModal();
     if (w?.isPT) {
-      markPTDone(w.weekIndex, w.dayIndex);
+      openPTLogModal(w.weekIndex, w.dayIndex);
     } else if (w) {
       openLogModal(w, w.weekIndex, w.dayIndex);
     }
@@ -2058,6 +2120,19 @@ function bindEvents() {
     btn.addEventListener('click', () => {
       selectedRPE = parseInt(btn.dataset.rpe);
       document.querySelectorAll('.rpe-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+
+  // PT log modal
+  document.getElementById('pt-log-save-btn').addEventListener('click', savePTLog);
+  document.getElementById('pt-log-cancel-btn').addEventListener('click', () => {
+    document.getElementById('pt-log-modal').classList.add('hidden');
+  });
+  document.querySelectorAll('#pt-rpe-picker .rpe-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedPTRPE = parseInt(btn.dataset.rpe);
+      document.querySelectorAll('#pt-rpe-picker .rpe-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
     });
   });
