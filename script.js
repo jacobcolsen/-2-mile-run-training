@@ -139,6 +139,7 @@ let selectedRPE = null;
 document.addEventListener('DOMContentLoaded', () => {
   loadWorkouts();
   loadProgress();
+  loadCustomizations();
   renderNav();
   renderTodayPage();
   renderWorkoutsPage();
@@ -1156,8 +1157,9 @@ function buildWorkoutPhases(workout) {
 // ============================================================
 
 function openPTTimerModal(weekIndex, dayIndex) {
-  const strength = WORKOUTS[weekIndex].days[dayIndex].strength;
-  if (!strength) return;
+  const raw = WORKOUTS[weekIndex].days[dayIndex].strength;
+  if (!raw) return;
+  const strength = applyPTCustom(raw, weekIndex, dayIndex);
 
   // Reuse timer machinery — mark as PT so Done button logs PT
   timerState.workout = { ...strength, weekIndex, dayIndex, isPT: true };
@@ -1178,7 +1180,8 @@ function openPTTimerModal(weekIndex, dayIndex) {
   document.getElementById('timer-modal').classList.remove('hidden');
 }
 
-function openTimerModal(workout, weekIndex, dayIndex) {
+function openTimerModal(rawWorkout, weekIndex, dayIndex) {
+  const workout = applyRunCustom(rawWorkout, weekIndex, dayIndex);
   timerState.workout = { ...workout, weekIndex, dayIndex };
   timerState.phases = buildWorkoutPhases(workout);
   timerState.running = false;
@@ -1578,6 +1581,204 @@ function markPTDone(weekIndex, dayIndex, rpe) {
 let pendingPTLog = null;  // { weekIndex, dayIndex }
 let selectedPTRPE = null;
 
+// ============================================================
+// WORKOUT CUSTOMIZATIONS
+// ============================================================
+
+let workoutCustomizations = {};
+
+function loadCustomizations() {
+  const raw = localStorage.getItem('runTrainerCustomizations');
+  workoutCustomizations = raw ? JSON.parse(raw) : {};
+}
+
+function saveCustomizations() {
+  localStorage.setItem('runTrainerCustomizations', JSON.stringify(workoutCustomizations));
+}
+
+function getCustom(key) {
+  return workoutCustomizations[key] || {};
+}
+
+function setCustom(key, overrides) {
+  workoutCustomizations[key] = overrides;
+  saveCustomizations();
+}
+
+function runCustomKey(wi, di) { return `${wi}-${di}`; }
+function ptCustomKey(wi, di)  { return `${wi}-${di}-pt`; }
+
+function applyRunCustom(workout, wi, di) {
+  const c = getCustom(runCustomKey(wi, di));
+  return Object.keys(c).length ? { ...workout, ...c } : workout;
+}
+
+function applyPTCustom(strength, wi, di) {
+  const c = getCustom(ptCustomKey(wi, di));
+  return Object.keys(c).length ? { ...strength, ...c } : strength;
+}
+
+function getRunAdjSpecs(workout) {
+  const specs = [];
+  switch (workout.type) {
+    case 'intervals':
+      specs.push({ key: 'repeats',          label: 'Intervals',   value: workout.repeats,                    min: 1,  max: 20,  step: 1,   fmt: v => `${v}` });
+      specs.push({ key: 'distance',         label: 'Distance',    value: workout.distance || '400m',          type: 'list', options: ['200m','300m','400m','600m','800m','1000m','1200m'] });
+      specs.push({ key: 'rest_seconds_timer', label: 'Rest',      value: workout.rest_seconds_timer || 90,   min: 15, max: 300, step: 15,  fmt: v => `${v}s` });
+      break;
+    case 'easy':
+      specs.push({ key: 'work_seconds',      label: 'Run Duration', value: workout.work_seconds || 1800,     min: 300, max: 5400, step: 300, fmt: v => `${Math.round(v/60)} min` });
+      if (workout.stride_count != null) {
+        specs.push({ key: 'stride_count',        label: 'Strides',       value: workout.stride_count,              min: 0,  max: 12,  step: 1,   fmt: v => `${v}` });
+        specs.push({ key: 'stride_seconds',      label: 'Stride Time',   value: workout.stride_seconds || 20,      min: 10, max: 60,  step: 5,   fmt: v => `${v}s` });
+        specs.push({ key: 'stride_rest_seconds', label: 'Stride Rest',   value: workout.stride_rest_seconds || 60, min: 15, max: 120, step: 15,  fmt: v => `${v}s` });
+      }
+      break;
+    case 'tempo':
+      specs.push({ key: 'work_seconds', label: 'Tempo Duration', value: workout.work_seconds || 900, min: 300, max: 3600, step: 60, fmt: v => `${Math.round(v/60)} min` });
+      break;
+    default:
+      break;
+  }
+  return specs;
+}
+
+function getPTAdjSpecs(strength) {
+  const specs = [];
+  switch (strength.timer_type) {
+    case 'rounds':
+      specs.push({ key: 'rounds',       label: 'Rounds',    value: strength.rounds,       min: 1,  max: 30,  step: 1,  fmt: v => `${v}` });
+      if (strength.push_reps != null) {
+        specs.push({ key: 'push_reps',  label: 'Push-ups',  value: strength.push_reps,    min: 1,  max: 50,  step: 1,  fmt: v => `${v}` });
+        specs.push({ key: 'sit_reps',   label: 'Sit-ups',   value: strength.sit_reps,     min: 1,  max: 60,  step: 1,  fmt: v => `${v}` });
+      }
+      specs.push({ key: 'rest_seconds', label: 'Rest',      value: strength.rest_seconds, min: 0,  max: 180, step: 5,  fmt: v => `${v}s` });
+      break;
+    case 'timed':
+      specs.push({ key: 'rounds',          label: 'Rounds',       value: strength.rounds,          min: 1,  max: 10,  step: 1,  fmt: v => `${v}` });
+      specs.push({ key: 'push_seconds',    label: 'Push-up Time', value: strength.push_seconds,    min: 15, max: 120, step: 5,  fmt: v => `${v}s` });
+      specs.push({ key: 'sit_seconds',     label: 'Sit-up Time',  value: strength.sit_seconds,     min: 15, max: 120, step: 5,  fmt: v => `${v}s` });
+      if (strength.between_seconds > 0) {
+        specs.push({ key: 'between_seconds', label: 'Between Rest', value: strength.between_seconds, min: 0, max: 300, step: 15, fmt: v => `${v}s` });
+      }
+      if (strength.rest_seconds > 0) {
+        specs.push({ key: 'rest_seconds', label: 'Round Rest',    value: strength.rest_seconds,    min: 0,  max: 300, step: 15, fmt: v => `${v}s` });
+      }
+      break;
+    case 'emom':
+      specs.push({ key: 'rounds', label: 'Minutes', value: strength.rounds, min: 4, max: 20, step: 2, fmt: v => `${v}` });
+      break;
+    default:
+      break;
+  }
+  return specs;
+}
+
+function renderAdjPanel(containerId, specs, customKey) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  if (!specs.length) { container.innerHTML = ''; return; }
+
+  const custom = { ...getCustom(customKey) };
+
+  function currentVal(spec) {
+    return custom[spec.key] !== undefined ? custom[spec.key] : spec.value;
+  }
+
+  function hasOverrides() {
+    return specs.some(s => custom[s.key] !== undefined && custom[s.key] !== s.value);
+  }
+
+  function render() {
+    container.innerHTML = '';
+    const section = document.createElement('div');
+    section.className = 'adj-section';
+
+    const header = document.createElement('div');
+    header.className = 'adj-header';
+
+    const title = document.createElement('span');
+    title.className = 'adj-title';
+    title.textContent = 'Adjust Workout';
+
+    const dot = document.createElement('span');
+    dot.className = 'adj-dot';
+    dot.title = 'Modified';
+    dot.style.display = hasOverrides() ? 'inline-block' : 'none';
+
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'adj-reset-btn';
+    resetBtn.textContent = 'Reset to defaults';
+    resetBtn.style.display = hasOverrides() ? 'inline-block' : 'none';
+    resetBtn.addEventListener('click', () => {
+      specs.forEach(s => delete custom[s.key]);
+      setCustom(customKey, custom);
+      render();
+    });
+
+    header.append(title, dot, resetBtn);
+    section.appendChild(header);
+
+    specs.forEach(spec => {
+      const row = document.createElement('div');
+      row.className = 'adj-row';
+
+      const label = document.createElement('span');
+      label.className = 'adj-label';
+      label.textContent = spec.label;
+
+      const stepper = document.createElement('div');
+      stepper.className = 'adj-stepper';
+
+      const minusBtn = document.createElement('button');
+      minusBtn.className = 'adj-btn';
+      minusBtn.textContent = '−';
+
+      const valSpan = document.createElement('span');
+      valSpan.className = 'adj-val';
+
+      const plusBtn = document.createElement('button');
+      plusBtn.className = 'adj-btn';
+      plusBtn.textContent = '+';
+
+      if (spec.type === 'list') {
+        const opts = spec.options;
+        let idx = opts.indexOf(currentVal(spec));
+        if (idx < 0) idx = opts.indexOf(spec.value);
+        if (idx < 0) idx = 0;
+        valSpan.textContent = opts[idx];
+        minusBtn.disabled = idx === 0;
+        plusBtn.disabled = idx === opts.length - 1;
+        minusBtn.addEventListener('click', () => {
+          if (idx > 0) { idx--; custom[spec.key] = opts[idx]; setCustom(customKey, custom); render(); }
+        });
+        plusBtn.addEventListener('click', () => {
+          if (idx < opts.length - 1) { idx++; custom[spec.key] = opts[idx]; setCustom(customKey, custom); render(); }
+        });
+      } else {
+        let val = currentVal(spec);
+        valSpan.textContent = spec.fmt ? spec.fmt(val) : val;
+        minusBtn.disabled = val <= spec.min;
+        plusBtn.disabled = val >= spec.max;
+        minusBtn.addEventListener('click', () => {
+          if (val > spec.min) { val = Math.max(spec.min, val - spec.step); custom[spec.key] = val; setCustom(customKey, custom); render(); }
+        });
+        plusBtn.addEventListener('click', () => {
+          if (val < spec.max) { val = Math.min(spec.max, val + spec.step); custom[spec.key] = val; setCustom(customKey, custom); render(); }
+        });
+      }
+
+      stepper.append(minusBtn, valSpan, plusBtn);
+      row.append(label, stepper);
+      section.appendChild(row);
+    });
+
+    container.appendChild(section);
+  }
+
+  render();
+}
+
 function openPTLogModal(weekIndex, dayIndex) {
   pendingPTLog = { weekIndex, dayIndex };
   selectedPTRPE = null;
@@ -1786,6 +1987,9 @@ function openDetailModal(weekIndex, dayIndex) {
   // Store context for the Start and Log button handlers
   detailContext = { weekIndex, dayIndex };
 
+  // Render run adjustment panel
+  renderAdjPanel('detail-run-adj', getRunAdjSpecs(workout), runCustomKey(weekIndex, dayIndex));
+
   // Update run tab button labels
   document.getElementById('detail-log-btn').textContent = entry ? 'Edit Log' : 'Log Workout';
 
@@ -1825,6 +2029,9 @@ function openDetailModal(weekIndex, dayIndex) {
         : `<div class="detail-pt-done-row">✓ PT Complete</div>`;
     }
     document.getElementById('detail-mark-pt-btn').textContent = ptDone ? 'Edit Log' : 'Log Strength';
+
+    // Render PT adjustment panel
+    renderAdjPanel('detail-pt-adj', getPTAdjSpecs(strength), ptCustomKey(weekIndex, dayIndex));
 
     // Wire PT buttons
     document.getElementById('detail-start-pt-btn').onclick = () => {
