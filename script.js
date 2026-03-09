@@ -1095,8 +1095,12 @@ function completeIntervalRestPhase(phase) {
 function updateTimerDisplay() {
   const phase = timerState.phases[timerState.phaseIndex];
 
-  // Phase label — shows 'Rest' during rest sub-phases, target distance during GPS work
+  // Compute shared flags up front
   const isRest = (phase.kind === 'intervals' || phase.kind === 'strides') && timerState.subPhase === 'rest';
+  const isGPSIntervalWork = phase.kind === 'intervals' &&
+    phase.targetDistanceKm && timerState.subPhase === 'work' && gpsState.active;
+
+  // Phase label — shows 'Rest' during rest sub-phases, target distance during GPS work
   let phaseLabel = isRest ? 'Rest' : phase.label;
   if (isGPSIntervalWork && phase.distanceLabel) phaseLabel = `Run ${phase.distanceLabel}`;
   document.getElementById('timer-phase-label').textContent = phaseLabel;
@@ -1109,8 +1113,6 @@ function updateTimerDisplay() {
   document.getElementById('timer-phase-sub').textContent = phaseSub;
 
   // Main display
-  const isGPSIntervalWork = phase.kind === 'intervals' &&
-    phase.targetDistanceKm && timerState.subPhase === 'work' && gpsState.active;
 
   if (phase.kind === 'stopwatch') {
     document.getElementById('timer-main-display').textContent = formatDuration(timerState.elapsed);
