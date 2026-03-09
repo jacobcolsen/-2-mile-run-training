@@ -1213,6 +1213,15 @@ function pauseTimer() {
 function skipCurrentPhase() {
   const phase = timerState.phases[timerState.phaseIndex];
   if (phase.kind === 'stopwatch') return; // nothing to skip on a stopwatch
+
+  // GPS interval work phase — distance check won't fire, call boundary directly
+  const isGPSIntervalWork = phase.kind === 'intervals' &&
+    phase.targetDistanceKm && timerState.subPhase === 'work' && gpsState.active;
+  if (isGPSIntervalWork) {
+    completeIntervalWorkPhase(phase);
+    return;
+  }
+
   timerState.remaining = 0;
   timerTick(); // trigger the boundary logic immediately
 }
