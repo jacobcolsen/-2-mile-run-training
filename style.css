@@ -823,7 +823,7 @@ body {
   max-width: 100%;
   box-sizing: border-box;
   height: 100%;
-  padding: var(--safe-top) 0 var(--safe-bottom);
+  padding: var(--safe-top) env(safe-area-inset-right, 0px) var(--safe-bottom) env(safe-area-inset-left, 0px);
   overflow: hidden;
 }
 
@@ -884,10 +884,22 @@ body {
 }
 
 #gps-km {
-  font-size: 26px;
+  font-size: clamp(18px, 5vw, 26px);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--green);
+  font-family: var(--mono);
+}
+
+#gps-pace-display {
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#gps-pace {
+  font-variant-numeric: tabular-nums;
   font-family: var(--mono);
 }
 
