@@ -58,6 +58,7 @@ const gpsState = {
   lastLat: null,
   lastLon: null,
   error: null,
+  startTime: null,   // Date.now() when GPS started — used for pace calculation
 };
 
 // Current log context
@@ -629,7 +630,8 @@ function renderLogList() {
 
     const distStr = entry.distance ? `${entry.distance} km` : '';
     const timeStr = entry.time ? entry.time : '';
-    const sub = [distStr, timeStr].filter(Boolean).join(' · ');
+    const paceStr = entry.pace ? `${entry.pace}/km` : '';
+    const sub = [distStr, timeStr, paceStr].filter(Boolean).join(' · ');
 
     row.innerHTML = `
       <span class="log-entry-icon">${workoutData.icon}</span>
@@ -1169,14 +1171,29 @@ function openLogModal(workout, weekIndex, dayIndex) {
     b.classList.toggle('selected', parseInt(b.dataset.rpe) === selectedRPE);
   });
 
-  // Pre-fill timer elapsed if stopwatch was used
-  if (timerState.mode === 'stopwatch' && timerState.elapsed > 0) {
-    document.getElementById('log-time').value = formatDuration(timerState.elapsed);
+  // Auto-fill time: prefer stopwatch elapsed, fall back to GPS elapsed
+  if (!existing?.time) {
+    const currentPhase = timerState.phases[timerState.phaseIndex];
+    if (currentPhase?.kind === 'stopwatch' && timerState.elapsed > 0) {
+      document.getElementById('log-time').value = formatDuration(timerState.elapsed);
+    } else if (gpsState.startTime) {
+      const elapsedSec = Math.round((Date.now() - gpsState.startTime) / 1000);
+      if (elapsedSec > 60) {
+        document.getElementById('log-time').value = formatDuration(elapsedSec);
+      }
+    }
   }
 
-  // Pre-fill GPS distance if tracking was active
+  // Auto-fill GPS distance
   if (gpsState.distanceKm > 0) {
     document.getElementById('log-distance').value = gpsState.distanceKm.toFixed(2);
+  }
+
+  // Auto-calculate avg pace from GPS data
+  if (!existing?.pace && gpsState.distanceKm >= 0.1 && gpsState.startTime) {
+    const elapsedMin = (Date.now() - gpsState.startTime) / 60000;
+    const paceMinPerKm = elapsedMin / gpsState.distanceKm;
+    document.getElementById('log-pace').value = formatPace(paceMinPerKm);
   }
 
   // Stop GPS when opening log (workout is over)
@@ -1402,6 +1419,7 @@ function startGPS() {
   gpsState.lastLon = null;
   gpsState.error = null;
   gpsState.active = true;
+  gpsState.startTime = Date.now();
 
   updateGPSDisplay();
   document.getElementById('gps-status').textContent = 'Acquiring signal…';
@@ -1463,6 +1481,24 @@ function onGPSError(err) {
 
 function updateGPSDisplay() {
   document.getElementById('gps-km').textContent = gpsState.distanceKm.toFixed(2);
+  // Show live avg pace once we have enough data
+  const paceEl = document.getElementById('gps-pace');
+  if (gpsState.distanceKm >= 0.05 && gpsState.startTime) {
+    const elapsedMin = (Date.now() - gpsState.startTime) / 60000;
+    const paceMinPerKm = elapsedMin / gpsState.distanceKm;
+    paceEl.textContent = formatPace(paceMinPerKm);
+  } else {
+    paceEl.textContent = '–:––';
+  }
+}
+
+// Format decimal minutes-per-km as "m:ss"
+function formatPace(minPerKm) {
+  if (!minPerKm || !isFinite(minPerKm) || minPerKm <= 0) return '–:––';
+  const totalSec = Math.round(minPerKm * 60);
+  const m = Math.floor(totalSec / 60);
+  const s = String(totalSec % 60).padStart(2, '0');
+  return `${m}:${s}`;
 }
 
 // Haversine formula — returns distance in km between two lat/lon points
