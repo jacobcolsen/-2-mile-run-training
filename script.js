@@ -908,15 +908,26 @@ function initSpeech() {
 function speak(text) {
   if (audioMode !== 'voice' || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
+
+  // On iOS 17+ / Safari 17+: request a transient-solo audio session so the OS
+  // fully PAUSES (not just ducks) background apps like Audible, Spotify, etc.
+  // When the utterance ends, switching back to 'auto' tells iOS to resume them.
+  if ('audioSession' in navigator) {
+    navigator.audioSession.type = 'transient-solo';
+  }
+
   const utt = new SpeechSynthesisUtterance(text);
   const voice = getVoice();
   if (voice) utt.voice = voice;
-  utt.rate = 0.95;   // Slightly slower = more natural
+  utt.rate = 0.95;
   utt.pitch = 1.0;
   utt.volume = 1.0;
-  // onend fires when iOS finishes speaking — iOS audio session then
-  // automatically resumes any interrupted app (Audible, Spotify, etc.)
-  utt.onend = () => {};
+  utt.onend = () => {
+    // Release the audio session so background audio (Audible, Spotify) resumes
+    if ('audioSession' in navigator) {
+      navigator.audioSession.type = 'auto';
+    }
+  };
   window.speechSynthesis.speak(utt);
 }
 
@@ -2381,14 +2392,12 @@ function bindEvents() {
     });
   });
 
-  // Quick mute toggle on the timer screen
+  // Audio mode cycle on the timer screen: voice → beeps → silent → voice
   document.getElementById('voice-btn').addEventListener('click', () => {
-    if (audioMode === 'silent') {
-      audioMode = localStorage.getItem('audioMode') || 'voice';
-    } else {
-      audioMode = 'silent';
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-    }
+    const cycle = { voice: 'beeps', beeps: 'silent', silent: 'voice' };
+    audioMode = cycle[audioMode] || 'voice';
+    localStorage.setItem('audioMode', audioMode);
+    if (audioMode !== 'voice' && window.speechSynthesis) window.speechSynthesis.cancel();
     updateVoiceBtn();
   });
 
@@ -2567,8 +2576,10 @@ function capitalise(str) {
 function updateVoiceBtn() {
   const btn = document.getElementById('voice-btn');
   if (!btn) return;
-  const icons = { voice: '🔊', beeps: '🔔', silent: '🔇' };
-  btn.textContent = icons[audioMode] || '🔊';
+  // Show icon + label so it's clear what mode is active
+  const labels = { voice: '🔊 Voice', beeps: '🔔 Beeps', silent: '🔇 Silent' };
+  btn.textContent = labels[audioMode] || '🔊 Voice';
+  btn.title = `Audio: ${audioMode} — tap to change`;
 }
 
 // Vibration
@@ -2578,65 +2589,41 @@ function vibrate(pattern) {
   }
 }
 
-// ---- Beep tones via <audio> + generated WAV ----
-// Using <audio> instead of AudioContext so iOS treats playback as a proper
-// audio-session interruption — this is what pauses Audible/Spotify/podcasts
-// and resumes them automatically when the beep finishes.
-//
-// speechSynthesis already does this natively on iOS (it uses the "speech"
-// audio session category). We match that behavior for beeps by routing
-// through an Audio element, which iOS places in the "playback" session.
+// ---- Beep tones via Web Audio API (AudioContext oscillator) ----
+// AudioContext mixes with background audio by default — it does NOT duck or
+// pause Audible/Spotify/podcasts. Only voice (speechSynthesis + audioSession)
+// should pause background audio.
 
-const beepCache = {};
+let beepCtx = null;
 
-// Build a short sine-wave WAV in memory and return a reusable Blob URL.
-// freq: Hz, dur: seconds, fadeMs: ms of linear fade-out
-function makeBeepUrl(freq, dur, fadeMs = 80) {
-  const sr = 22050;
-  const n  = Math.floor(sr * dur);
-  const buf = new ArrayBuffer(44 + n * 2);
-  const v   = new DataView(buf);
-  const str = (off, s) => [...s].forEach((c, i) => v.setUint8(off + i, c.charCodeAt(0)));
-
-  // Minimal WAV header (PCM, 16-bit, mono)
-  str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true);
-  str(8, 'WAVE'); str(12, 'fmt ');
-  v.setUint32(16, 16, true);    // chunk size
-  v.setUint16(20, 1, true);     // PCM
-  v.setUint16(22, 1, true);     // mono
-  v.setUint32(24, sr, true);    // sample rate
-  v.setUint32(28, sr * 2, true);// byte rate
-  v.setUint16(32, 2, true);     // block align
-  v.setUint16(34, 16, true);    // bits per sample
-  str(36, 'data'); v.setUint32(40, n * 2, true);
-
-  const fadeStart = n - Math.floor(sr * fadeMs / 1000);
-  for (let i = 0; i < n; i++) {
-    const env = i >= fadeStart ? (n - i) / (n - fadeStart) : 1;
-    const s   = Math.sin(2 * Math.PI * freq * i / sr) * 0.65 * env;
-    v.setInt16(44 + i * 2, Math.round(s * 32767), true);
-  }
-  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
-}
-
-function getBeepUrl(type) {
-  if (!beepCache[type]) {
-    if (type === 'high')     beepCache.high = makeBeepUrl(880, 0.22);
-    else if (type === 'low') beepCache.low  = makeBeepUrl(523, 0.32); // C5
-    else if (type === 'end') beepCache.end  = makeBeepUrl(660, 0.18); // E5
-  }
-  return beepCache[type];
-}
-
-// Call once from a user-gesture to pre-generate and warm up Audio on iOS
+// Call once from a user gesture to create and unlock the AudioContext on iOS.
 function initBeeps() {
-  ['high', 'low', 'end'].forEach(getBeepUrl);
+  try {
+    beepCtx = beepCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (beepCtx.state === 'suspended') beepCtx.resume();
+  } catch (e) {}
 }
 
 function playBeep(type = 'high') {
   if (audioMode === 'silent') return;
+  if (!beepCtx) return;
   try {
-    const audio = new Audio(getBeepUrl(type));
-    audio.play().catch(() => {});
+    if (beepCtx.state === 'suspended') beepCtx.resume();
+    const freqMap = { high: 880, low: 523, end: 660 };
+    const durMap  = { high: 0.22, low: 0.32, end: 0.18 };
+    const freq = freqMap[type] || 880;
+    const dur  = durMap[type]  || 0.22;
+    const t    = beepCtx.currentTime;
+
+    const osc  = beepCtx.createOscillator();
+    const gain = beepCtx.createGain();
+    osc.connect(gain);
+    gain.connect(beepCtx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.65, t);
+    gain.gain.linearRampToValueAtTime(0, t + dur - 0.04);
+    osc.start(t);
+    osc.stop(t + dur);
   } catch (e) {}
 }

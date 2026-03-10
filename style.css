@@ -837,6 +837,17 @@ body {
   box-sizing: border-box;
 }
 
+#voice-btn {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  min-width: 80px;
+}
+
 #timer-workout-label {
   font-size: 16px;
   font-weight: 700;
