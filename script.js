@@ -979,9 +979,10 @@ function buildStrengthPhases(strength) {
         reps: strength.rounds,
         workSeconds: strength.work_seconds,
         restSeconds: strength.rest_seconds,
+        workManual: true,  // rep-based: no work countdown — user taps ⏭ when done
         workNote,
         restNote: `Rest ${strength.rest_seconds}s`,
-        voiceStart: `${strength.rounds} rounds. Each round: ${repDesc}. ${strength.work_seconds} seconds work, ${strength.rest_seconds} seconds rest.`,
+        voiceStart: `${strength.rounds} rounds. Each round: ${repDesc}. Tap next when done with each round.`,
         voiceRepStart:  (r, t) => `Round ${r} of ${t}. ${repDesc}. Go!`,
         voiceRestStart: (r)    => `Round ${r} done. Rest ${strength.rest_seconds} seconds.`,
         voiceComplete:  'All rounds complete! Great work.',
@@ -1047,16 +1048,15 @@ function buildStrengthPhases(strength) {
       const sitSeq  = strength.sit_ladder  || [2, 4, 6, 8, 10, 12, 10, 8, 6, 4, 2];
 
       phases.push({
-        kind: 'countdown', label: 'Get Ready', color: 'purple', seconds: 10,
+        kind: 'manual', label: 'Get Ready', color: 'purple',
         skipDefaultPhaseLabel: true, phaseLabel: 'Push-ups first',
-        voiceStart: 'Volume ladder. Push-ups first, then sit-ups. Tap the skip arrow when each set is done.',
+        voiceStart: 'Volume ladder. Push-ups first, then sit-ups. Tap next when each set is done.',
       });
 
       pushSeq.forEach((reps, i) => {
         phases.push({
-          kind: 'countdown', label: `Push-ups — ${reps}`,
+          kind: 'manual', label: `Push-ups — ${reps}`,
           color: 'purple',
-          seconds: Math.max(20, reps * 4 + 10),
           skipDefaultPhaseLabel: true,
           phaseLabel: `Push-up set ${i + 1} of ${pushSeq.length}`,
           voiceStart: `${reps} push-up${reps > 1 ? 's' : ''}. Go!`,
@@ -1064,16 +1064,15 @@ function buildStrengthPhases(strength) {
       });
 
       phases.push({
-        kind: 'countdown', label: 'Switch to Sit-ups', color: 'rest', seconds: 15,
+        kind: 'manual', label: 'Switch to Sit-ups', color: 'rest',
         skipDefaultPhaseLabel: true, phaseLabel: 'Push-ups done!',
         voiceStart: 'Push-up ladder complete. Get ready for sit-ups.',
       });
 
       sitSeq.forEach((reps, i) => {
         phases.push({
-          kind: 'countdown', label: `Sit-ups — ${reps}`,
+          kind: 'manual', label: `Sit-ups — ${reps}`,
           color: 'purple',
-          seconds: Math.max(20, reps * 5 + 10),
           skipDefaultPhaseLabel: true,
           phaseLabel: `Sit-up set ${i + 1} of ${sitSeq.length}`,
           voiceStart: `${reps} sit-up${reps > 1 ? 's' : ''}. Go!`,
@@ -1295,7 +1294,7 @@ function initPhase(index) {
     // Reset per-rep GPS distance at start of interval phase
     gpsState.intervalDistanceKm = 0;
   } else {
-    // stopwatch
+    // stopwatch or manual
     timerState.elapsed = 0;
     timerState.remaining = 0;
     timerState.totalSeconds = 0;
@@ -1332,6 +1331,18 @@ function timerTick() {
     timerState.elapsed++;
     updateTimerDisplay();
     announceMilestone(timerState.elapsed);
+    return;
+  }
+
+  // --- Manual (rep-based, no countdown) — user taps ⏭ when done ---
+  if (phase.kind === 'manual') {
+    updateTimerDisplay();
+    return;
+  }
+
+  // --- Manual work sub-phase in rep-based intervals ---
+  if ((phase.kind === 'intervals') && phase.workManual && timerState.subPhase === 'work') {
+    updateTimerDisplay();
     return;
   }
 
@@ -1431,6 +1442,8 @@ function updateTimerDisplay() {
   const phase = timerState.phases[timerState.phaseIndex];
 
   // Compute shared flags up front
+  const isManualWork = phase.kind === 'manual' ||
+    (phase.kind === 'intervals' && phase.workManual && timerState.subPhase === 'work');
   const isRest = (phase.kind === 'intervals' || phase.kind === 'strides') && timerState.subPhase === 'rest';
   const isGPSIntervalWork = phase.kind === 'intervals' &&
     phase.targetDistanceKm && timerState.subPhase === 'work' && gpsState.active;
@@ -1458,10 +1471,11 @@ function updateTimerDisplay() {
 
   // Main display
 
-  if (phase.kind === 'stopwatch') {
+  if (isManualWork) {
+    document.getElementById('timer-main-display').textContent = '— —';
+  } else if (phase.kind === 'stopwatch') {
     document.getElementById('timer-main-display').textContent = formatDuration(timerState.elapsed);
   } else if (isGPSIntervalWork) {
-    // Show distance progress: "0.24 km"
     document.getElementById('timer-main-display').textContent =
       `${gpsState.intervalDistanceKm.toFixed(2)} km`;
   } else {
@@ -1480,8 +1494,9 @@ function updateTimerDisplay() {
 
   // Progress bar
   const wrap = document.getElementById('timer-progress-wrap');
-  if (isGPSIntervalWork) {
-    // Fill bar by distance covered toward target
+  if (isManualWork) {
+    wrap.classList.add('hidden');
+  } else if (isGPSIntervalWork) {
     wrap.classList.remove('hidden');
     const pct = Math.min((gpsState.intervalDistanceKm / phase.targetDistanceKm) * 100, 100);
     document.getElementById('timer-progress-bar').style.width = `${pct}%`;
@@ -1559,6 +1574,20 @@ function pauseTimer() {
 function skipCurrentPhase() {
   const phase = timerState.phases[timerState.phaseIndex];
   if (phase.kind === 'stopwatch') return; // nothing to skip on a stopwatch
+
+  // Manual phase (ladder step) — advance to next phase
+  if (phase.kind === 'manual') {
+    vibrate([150]);
+    playBeep('end');
+    advancePhase();
+    return;
+  }
+
+  // Manual work sub-phase in rep-based intervals — complete this rep, start rest
+  if (phase.kind === 'intervals' && phase.workManual && timerState.subPhase === 'work') {
+    completeIntervalWorkPhase(phase);
+    return;
+  }
 
   // GPS interval work phase — distance check won't fire, call boundary directly
   const isGPSIntervalWork = phase.kind === 'intervals' &&
