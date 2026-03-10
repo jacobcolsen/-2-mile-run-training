@@ -972,8 +972,8 @@ function buildStrengthPhases(strength) {
         ? `${strength.push_reps} push-ups, then ${strength.sit_reps} sit-ups`
         : 'push-ups to near max, then sit-ups';
       const workNote = hasReps
-        ? `${strength.push_reps} push-ups · ${strength.sit_reps} sit-ups`
-        : 'Push-ups → Sit-ups';
+        ? `${strength.push_reps} push-ups\n${strength.sit_reps} sit-ups`
+        : 'Push-ups\nSit-ups';
       phases.push({
         kind: 'intervals', label: strength.label, color: 'purple',
         reps: strength.rounds,
@@ -1057,6 +1057,7 @@ function buildStrengthPhases(strength) {
         phases.push({
           kind: 'manual', label: `Push-ups — ${reps}`,
           color: 'purple',
+          displayNumber: String(reps),
           skipDefaultPhaseLabel: true,
           phaseLabel: `Push-up set ${i + 1} of ${pushSeq.length}`,
           voiceStart: `${reps} push-up${reps > 1 ? 's' : ''}. Go!`,
@@ -1073,6 +1074,7 @@ function buildStrengthPhases(strength) {
         phases.push({
           kind: 'manual', label: `Sit-ups — ${reps}`,
           color: 'purple',
+          displayNumber: String(reps),
           skipDefaultPhaseLabel: true,
           phaseLabel: `Sit-up set ${i + 1} of ${sitSeq.length}`,
           voiceStart: `${reps} sit-up${reps > 1 ? 's' : ''}. Go!`,
@@ -1458,8 +1460,8 @@ function updateTimerDisplay() {
   if (!phaseSub) {
     if (phase.repNote) {
       phaseSub = phase.repNote(timerState.repCurrent);
-    } else if (timerState.subPhase === 'work' && phase.workNote) {
-      phaseSub = phase.workNote;
+    } else if (!isManualWork && timerState.subPhase === 'work' && phase.workNote) {
+      phaseSub = phase.workNote; // shown small only when not shown big in main display
     } else if (timerState.subPhase === 'rest' && phase.restNote) {
       phaseSub = phase.restNote;
     }
@@ -1472,14 +1474,29 @@ function updateTimerDisplay() {
   // Main display
 
   if (isManualWork) {
-    document.getElementById('timer-main-display').textContent = '— —';
-  } else if (phase.kind === 'stopwatch') {
-    document.getElementById('timer-main-display').textContent = formatDuration(timerState.elapsed);
-  } else if (isGPSIntervalWork) {
-    document.getElementById('timer-main-display').textContent =
-      `${gpsState.intervalDistanceKm.toFixed(2)} km`;
+    const displayEl = document.getElementById('timer-main-display');
+    if (phase.kind === 'manual' && phase.displayNumber) {
+      // Ladder: big rep count number — same style as a countdown
+      displayEl.textContent = phase.displayNumber;
+      displayEl.classList.remove('timer-display-text');
+    } else if (phase.workManual && phase.workNote) {
+      // Rounds: two exercises stacked where the timer was
+      displayEl.textContent = phase.workNote;
+      displayEl.classList.add('timer-display-text');
+    } else {
+      displayEl.textContent = '—';
+      displayEl.classList.remove('timer-display-text');
+    }
   } else {
-    document.getElementById('timer-main-display').textContent = formatTime(timerState.remaining);
+    const displayEl = document.getElementById('timer-main-display');
+    displayEl.classList.remove('timer-display-text');
+    if (phase.kind === 'stopwatch') {
+      displayEl.textContent = formatDuration(timerState.elapsed);
+    } else if (isGPSIntervalWork) {
+      displayEl.textContent = `${gpsState.intervalDistanceKm.toFixed(2)} km`;
+    } else {
+      displayEl.textContent = formatTime(timerState.remaining);
+    }
   }
 
   // Rep row
